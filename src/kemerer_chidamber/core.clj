@@ -110,47 +110,24 @@
          ret (.invokeAll pool tasks)]
      (mapcat #(.get ^java.util.concurrent.Future %) ret))))
 
+(def ^java.util.concurrent.ForkJoinPool
+  fj-pool (java.util.concurrent.ForkJoinPool.))
+
 (defn apply-metric-forkjoin
   "Applies the given metric to all JGraLab classes in parallel using a
   ForkJoinPool."
   [g metric]
   (sort
    (seq-compare (constantly 0) #(- %2 %1) compare)
-   (let [classes (shuffle (vseq g 'ClassDefinition))
-         step (max 25 (quot (count classes)
-                            (* 10 (-> (Runtime/getRuntime)
-                                      .availableProcessors))))
-         chunks (partition step step [] classes)
-         tasks (map (fn [chunk]
-                      (fn []
-                        (doall ;; be eager!
-                         (map (fn [c]
-                                [c (metric c) (value c :fullyQualifiedName)])
-                              (filter #(re-matches #"de\.uni_koblenz\.jgralab\..*"
-                                                   (value % :fullyQualifiedName))
-                                      chunk)))))
-                    chunks)
-         ret (.invokeAll pool tasks)]
-     (mapcat #(.get ^java.util.concurrent.Future %) ret))))
-
-(defmacro eval-time
-  "Evaluate `ex' and return the time needed for its evaluation."
-  [ex]
-  `(let [s# (System/currentTimeMillis)]
-     ~ex
-     (- (System/currentTimeMillis) s#)))
-
-(defn apply-timed-metric
-  "Applies the given metric to all JGraLab classes and returns a sorted seq of
-  [evaluation-time fqn] pairs."
-  [g metric]
-  (sort
-   (seq-compare #(- %2 %1) compare)
-   (for [c (vseq g 'ClassDefinition)
-         :let [fqn (value c :fullyQualifiedName)]
-         :when (re-matches #"de\.uni_koblenz\.jgralab\..*" fqn)]
-     [(eval-time (metric c)) fqn])))
-
+   (let [res (doall (map (fn [c]
+                           (let [^java.util.concurrent.Callable f
+                                 (fn []
+                                   [c (metric c) (value c :fullyQualifiedName)])]
+                             (.submit fj-pool f)))
+                         (filter #(re-matches #"de\.uni_koblenz\.jgralab\..*"
+                                              (value % :fullyQualifiedName))
+                                 (vseq g 'ClassDefinition))))]
+     (map #(.get ^java.util.concurrent.ForkJoinTask %) res))))
 
 ;;*** Depth of Inheritance Tree
 
@@ -171,6 +148,10 @@
 (defn classes-by-depth-of-inheritance-tree-parallel
   [g]
   (apply-metric-parallel g depth-of-inheritance-tree))
+
+(defn classes-by-depth-of-inheritance-tree-forkjoin
+  [g]
+  (apply-metric-forkjoin g depth-of-inheritance-tree))
 
 
 ;;*** Coupling between Objects
@@ -197,6 +178,10 @@
 (defn classes-by-coupling-between-objects-parallel
   [g]
   (apply-metric-parallel g #(count (coupled-classes %))))
+
+(defn classes-by-coupling-between-objects-forkjoin
+  [g]
+  (apply-metric-forkjoin g #(count (coupled-classes %))))
 
 ;;*** Weighted Methods per Class
 
@@ -226,6 +211,10 @@
   [g]
   (apply-metric-parallel g weighted-method-per-class))
 
+(defn classes-by-weighted-methods-per-class-forkjoin
+  [g]
+  (apply-metric-forkjoin g weighted-method-per-class))
+
 ;;*** Number of Children
 
 (defn subtypes
@@ -241,6 +230,10 @@
 (defn classes-by-number-of-children-parallel
   [g]
   (apply-metric-parallel g #(count (subtypes %))))
+
+(defn classes-by-number-of-children-forkjoin
+  [g]
+  (apply-metric-forkjoin g #(count (subtypes %))))
 
 ;;*** Response for a Class
 
@@ -264,6 +257,10 @@
 (defn classes-by-response-for-a-class-parallel
   [g]
   (apply-metric-parallel g #(count (response-set %))))
+
+(defn classes-by-response-for-a-class-forkjoin
+  [g]
+  (apply-metric-forkjoin g #(count (response-set %))))
 
 
 ;;*** Lack of Cohesion in Methods
@@ -309,4 +306,8 @@
 (defn classes-by-lack-of-cohesion-in-methods-parallel
   [g]
   (apply-metric-parallel g lack-of-cohesion))
+
+(defn classes-by-lack-of-cohesion-in-methods-forkjoin
+  [g]
+  (apply-metric-forkjoin g lack-of-cohesion))
 
