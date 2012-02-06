@@ -110,6 +110,29 @@
          ret (.invokeAll pool tasks)]
      (mapcat #(.get ^java.util.concurrent.Future %) ret))))
 
+(defn apply-metric-forkjoin
+  "Applies the given metric to all JGraLab classes in parallel using a
+  ForkJoinPool."
+  [g metric]
+  (sort
+   (seq-compare (constantly 0) #(- %2 %1) compare)
+   (let [classes (shuffle (vseq g 'ClassDefinition))
+         step (max 25 (quot (count classes)
+                            (* 10 (-> (Runtime/getRuntime)
+                                      .availableProcessors))))
+         chunks (partition step step [] classes)
+         tasks (map (fn [chunk]
+                      (fn []
+                        (doall ;; be eager!
+                         (map (fn [c]
+                                [c (metric c) (value c :fullyQualifiedName)])
+                              (filter #(re-matches #"de\.uni_koblenz\.jgralab\..*"
+                                                   (value % :fullyQualifiedName))
+                                      chunk)))))
+                    chunks)
+         ret (.invokeAll pool tasks)]
+     (mapcat #(.get ^java.util.concurrent.Future %) ret))))
+
 (defmacro eval-time
   "Evaluate `ex' and return the time needed for its evaluation."
   [ex]

@@ -9,6 +9,14 @@
 (defn load-standard []
   (load-graph "jgralab.tg.gz" :standard))
 
+(defn do-timing [g title sv tpv]
+  (println " " title)
+  (print "    - Sequential: ")
+  (let [r1 (time (doall (sv g)))]
+    (print "    - ThreadPool: ")
+    (let [r2 (time (doall (tpv g)))]
+      (is (= r1 r2)))))
+
 (deftest benchmark-generic-vs-standard
   (doseq [f [load-standard load-generic]]
     (let [g (f)]
@@ -26,20 +34,26 @@
         (println)
         (System/gc)
 
-        (print "  Depth of Inheritance Tree:\t")
-        (time (dorun (classes-by-depth-of-inheritance-tree g)))
+        (do-timing g "Depth of Inheritance Tree:"
+                   classes-by-depth-of-inheritance-tree
+                   classes-by-depth-of-inheritance-tree-parallel)
 
-        (print "  Coupling between Objects:\t")
-        (time (dorun (classes-by-coupling-between-objects g)))
+        (do-timing g "Coupling between Objects:"
+                   classes-by-coupling-between-objects
+                   classes-by-coupling-between-objects-parallel)
 
-        (print "  Weighted Methods per Class:\t")
-        (time (dorun (classes-by-weighted-methods-per-class g)))
+        (do-timing g "Weighted Methods per Class:"
+                   classes-by-weighted-methods-per-class
+                   classes-by-weighted-methods-per-class-parallel)
 
-        (print "  Number of Children:\t\t")
-        (time (dorun (classes-by-number-of-children g)))
+        (do-timing g "Number of Children:"
+                   classes-by-number-of-children
+                   classes-by-number-of-children-parallel)
 
-        (print "  Response for a Class:\t\t")
-        (time (dorun (classes-by-response-for-a-class g)))
+        (do-timing g "Response for a Class:"
+                   classes-by-response-for-a-class
+                   classes-by-response-for-a-class-parallel)
 
-        (print "  Lack of Cohesion in Methods:\t")
-        (time (dorun (classes-by-lack-of-cohesion-in-methods g)))))))
+        (do-timing g "Lack of Cohesion in Methods:"
+                   classes-by-lack-of-cohesion-in-methods
+                   classes-by-lack-of-cohesion-in-methods-parallel)))))
