@@ -5,19 +5,25 @@
 
 ;;* Convenience
 
-;; (defn package-by-fqn
-;;   "Returns the JavaPackage with the given fully qualified name."
-;;   [g fqn]
-;;   (the (filter #(= (value % :fullyQualifiedName)
-;;                    (name fqn))
-;;                (vseq g 'JavaPackage))))
+;; (defn fixup-package
+;;   [p n]
+;;   (doseq [cc (reachables p [p-seq :compilationUnits :classifiers])]
+;;     (print (str n "." (eget cc :name)) "==>")
+;;     (eset! cc :fullName (str n "." (eget cc :name)))
+;;     (println (eget cc :fullName)))
+;;   (doseq [sp (eget p :subpackages)]
+;;     (fixup-package sp (str n "." (eget sp :name)))))
+
+;; (defn fixup-model
+;;   [m]
+;;   (doseq [root (filter #(= "de" (eget % :name))
+;;                       (eallcontents m 'containers.Package))]
+;;     (fixup-package root (eget root :name))))
 
 ;; (defn type-by-name
 ;;   "Returns the Type with the given (fully qualified) name n."
-;;   [g n]
-;;   (the (filter #(or (= (value % :fullyQualifiedName) (name n))
-;;                     (= (value % :name) (name n)))
-;;                (vseq g 'Type))))
+;;   [m n]
+;;   )
 
 ;; (defn type-hierarchy
 ;;   "Returns a map of t's type hierarchy."

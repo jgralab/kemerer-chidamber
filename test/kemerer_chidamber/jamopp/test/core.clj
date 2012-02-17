@@ -1,6 +1,8 @@
 (ns kemerer-chidamber.jamopp.test.core
   (:use [kemerer-chidamber.jamopp.core])
   (:use [funnyqt.emf.core])
+  (:use [funnyqt.emf.query])
+  (:use [funnyqt.generic])
   (:use [clojure.test])
   (:require [clojure.java.io :as io]))
 
