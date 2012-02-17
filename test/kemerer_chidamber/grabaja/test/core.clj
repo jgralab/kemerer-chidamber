@@ -1,5 +1,5 @@
-(ns kemerer-chidamber.tg.test.core
-  (:use [kemerer-chidamber.tg.core])
+(ns kemerer-chidamber.grabaja.test.core
+  (:use [kemerer-chidamber.grabaja.core])
   (:use [funnyqt.tg.core])
   (:use [clojure.test]))
 

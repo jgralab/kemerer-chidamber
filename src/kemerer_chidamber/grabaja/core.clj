@@ -1,4 +1,4 @@
-(ns kemerer-chidamber.tg.core
+(ns kemerer-chidamber.grabaja.core
   (:use funnyqt.generic)
   (:use funnyqt.tg.core)
   (:use funnyqt.tg.query))
