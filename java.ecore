@@ -61,9 +61,6 @@
       <eOperations name="getAllMembers" upperBound="-1" eType="/10/Member">
         <eParameters name="context" eType="/3/Commentable"/>
       </eOperations>
-      <eStructuralFeatures xsi:type="ecore:EAttribute" name="fullName" transient="true">
-        <eType xsi:type="ecore:EDataType" href="http://www.eclipse.org/emf/2002/Ecore#//EString"/>
-      </eStructuralFeatures>
     </eClassifiers>
     <eClassifiers xsi:type="ecore:EClass" name="Implementor" abstract="true" eSuperTypes="/3/Commentable">
       <eStructuralFeatures xsi:type="ecore:EReference" name="implements" upperBound="-1" eType="/16/TypeReference" containment="true"/>
@@ -182,9 +179,12 @@
       <eOperations name="getClassifiersInSamePackage" upperBound="-1" eType="/2/ConcreteClassifier"/>
       <eStructuralFeatures xsi:type="ecore:EReference" name="classifiers" lowerBound="1" upperBound="-1" eType="/2/ConcreteClassifier" containment="true"/>
     </eClassifiers>
-    <eClassifiers xsi:type="ecore:EClass" name="Package" eSuperTypes="/4/JavaRoot /0/Annotable /14/ReferenceableElement">
+    <eClassifiers xsi:type="ecore:EClass" name="Package" eSuperTypes="/4/JavaRoot /0/Annotable">
+      <eOperations name="getNamespacesAsString">
+        <eType xsi:type="ecore:EDataType" href="http://www.eclipse.org/emf/2002/Ecore#//EString"/>
+      </eOperations>
+      <eOperations name="getClassifiersInSamePackage" upperBound="-1" eType="/2/ConcreteClassifier"/>
       <eStructuralFeatures xsi:type="ecore:EReference" name="compilationUnits" upperBound="-1" eType="/4/CompilationUnit" containment="true"/>
-      <eStructuralFeatures xsi:type="ecore:EReference" name="subpackages" upperBound="-1" eType="/4/Package" containment="true"/>
     </eClassifiers>
     <eClassifiers xsi:type="ecore:EClass" name="EmptyModel" eSuperTypes="/4/JavaRoot"/>
   </ecore:EPackage>
@@ -452,6 +452,17 @@
           <eType xsi:type="ecore:EDataType" href="http://www.eclipse.org/emf/2002/Ecore#//EString"/>
         </eParameters>
       </eOperations>
+      <eOperations name="getMethods" upperBound="-1" eType="/10/Method"/>
+      <eOperations name="removeMethods">
+        <eParameters name="name" lowerBound="1">
+          <eType xsi:type="ecore:EDataType" href="http://www.eclipse.org/emf/2002/Ecore#//EString"/>
+        </eParameters>
+      </eOperations>
+      <eOperations name="getMembersByName" upperBound="-1" eType="/10/Member">
+        <eParameters name="name" lowerBound="1">
+          <eType xsi:type="ecore:EDataType" href="http://www.eclipse.org/emf/2002/Ecore#//EString"/>
+        </eParameters>
+      </eOperations>
       <eStructuralFeatures xsi:type="ecore:EReference" name="members" upperBound="-1" eType="/10/Member" containment="true"/>
       <eStructuralFeatures xsi:type="ecore:EReference" name="defaultMembers" upperBound="-1" eType="/10/Member" containment="true"/>
     </eClassifiers>
@@ -502,6 +513,14 @@
       </eOperations>
       <eOperations name="isStatic">
         <eType xsi:type="ecore:EDataType" href="http://www.eclipse.org/emf/2002/Ecore#//EBoolean"/>
+      </eOperations>
+      <eOperations name="removeModifier">
+        <eParameters name="modifierType">
+          <eGenericType>
+            <eTypeArguments/>
+            <eClassifier xsi:type="ecore:EDataType" href="http://www.eclipse.org/emf/2002/Ecore#//EJavaClass"/>
+          </eGenericType>
+        </eParameters>
       </eOperations>
       <eStructuralFeatures xsi:type="ecore:EReference" name="annotationsAndModifiers" upperBound="-1" eType="/11/AnnotationInstanceOrModifier" containment="true"/>
     </eClassifiers>
@@ -597,6 +616,9 @@
     </eClassifiers>
     <eClassifiers xsi:type="ecore:EClass" name="SelfReference" eSuperTypes="/14/Reference">
       <eStructuralFeatures xsi:type="ecore:EReference" name="self" lowerBound="1" eType="/9/Self" containment="true"/>
+    </eClassifiers>
+    <eClassifiers xsi:type="ecore:EClass" name="PackageReference" eSuperTypes="/14/ReferenceableElement">
+      <eStructuralFeatures xsi:type="ecore:EReference" name="subpackages" upperBound="-1" eType="/14/PackageReference" containment="true"/>
     </eClassifiers>
   </ecore:EPackage>
   <ecore:EPackage name="statements" nsURI="http://www.emftext.org/java/statements" nsPrefix="statements">
