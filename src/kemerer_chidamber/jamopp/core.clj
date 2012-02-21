@@ -28,84 +28,61 @@
 
 ;;** Chidamber & Kemerer
 
-;; (defn apply-metric
-;;   "Applies the given metric to all JGraLab classes."
-;;   [g metric]
-;;   (sort
-;;    (seq-compare (constantly 0) #(- %2 %1) compare)
-;;    (for [c (vseq g 'ClassDefinition)
-;;          :let [fqn (value c :fullyQualifiedName)]
-;;          :when (re-matches #"de\.uni_koblenz\.jgralab\..*" fqn)]
-;;      [c (metric c) fqn])))
+(defn apply-metric
+  "Applies the given metric to all JGraLab classes."
+  [m metric]
+  (sort
+   (seq-compare (constantly 0) #(- %2 %1) compare)
+   (for [c (eallcontents m 'Class)
+         :let [cu (econtainer c)
+               cun (eget cu :name)]
+         :when (re-matches #"de\.uni_koblenz\.jgralab\..*" cun)]
+     [c (metric c) cun])))
 
-;; (def ^java.util.concurrent.ExecutorService
-;;   pool (java.util.concurrent.Executors/newFixedThreadPool
-;;         (-> (Runtime/getRuntime) .availableProcessors)))
+(def ^java.util.concurrent.ForkJoinPool
+  fj-pool (java.util.concurrent.ForkJoinPool.))
 
-;; (defn apply-metric-parallel
-;;   "Applies the given metric to all JGraLab classes in parallel."
-;;   [g metric]
-;;   (sort
-;;    (seq-compare (constantly 0) #(- %2 %1) compare)
-;;    (let [classes (shuffle (vseq g 'ClassDefinition))
-;;          step (max 25 (quot (count classes)
-;;                             (* 10 (-> (Runtime/getRuntime)
-;;                                       .availableProcessors))))
-;;          chunks (partition step step [] classes)
-;;          tasks (map (fn [chunk]
-;;                       (fn []
-;;                         (doall ;; be eager!
-;;                          (map (fn [c]
-;;                                 [c (metric c) (value c :fullyQualifiedName)])
-;;                               (filter #(re-matches #"de\.uni_koblenz\.jgralab\..*"
-;;                                                    (value % :fullyQualifiedName))
-;;                                       chunk)))))
-;;                     chunks)
-;;          ret (.invokeAll pool tasks)]
-;;      (mapcat #(.get ^java.util.concurrent.Future %) ret))))
-
-;; (def ^java.util.concurrent.ForkJoinPool
-;;   fj-pool (java.util.concurrent.ForkJoinPool.))
-
-;; (defn apply-metric-forkjoin
-;;   "Applies the given metric to all JGraLab classes in parallel using a
-;;   ForkJoinPool."
-;;   [g metric]
-;;   (sort
-;;    (seq-compare (constantly 0) #(- %2 %1) compare)
-;;    (let [res (doall (map (fn [c]
-;;                            (let [^java.util.concurrent.Callable f
-;;                                  (fn []
-;;                                    [c (metric c) (value c :fullyQualifiedName)])]
-;;                              (.submit fj-pool f)))
-;;                          (filter #(re-matches #"de\.uni_koblenz\.jgralab\..*"
-;;                                               (value % :fullyQualifiedName))
-;;                                  (vseq g 'ClassDefinition))))]
-;;      (map #(.get ^java.util.concurrent.ForkJoinTask %) res))))
+(defn apply-metric-forkjoin
+  "Applies the given metric to all JGraLab classes in parallel using a
+  ForkJoinPool."
+  [m metric]
+  (sort
+   (seq-compare (constantly 0) #(- %2 %1) compare)
+   (let [class-qname (fn [c] (eget (econtainer c) :name))
+         res (doall (map (fn [c]
+                           (let [^java.util.concurrent.Callable f
+                                 (fn []
+                                   [c (metric c) (class-qname c)])]
+                             (.submit fj-pool f)))
+                         (filter (fn [c]
+                                   (re-matches #"de\.uni_koblenz\.jgralab\..*"
+                                               (class-qname c)))
+                                 (eallcontents m 'Class))))]
+     (map #(.get ^java.util.concurrent.ForkJoinTask %) res))))
 
 ;;*** Depth of Inheritance Tree
 
-;; (defn depth-of-inheritance-tree
-;;   "Returns the depth of the inheritance tree of Type t."
-;;   [t]
-;;   (let [supers (reachables t [p-seq [<-- 'IsSuperClassOf]
-;;                                     [<-- 'IsTypeDefinitionOf]])]
-;;     (cond
-;;      (seq supers) (inc (apply max (map depth-of-inheritance-tree supers)))
-;;      (= (value t :fullyQualifiedName) "java.lang.Object") 0
-;;      :else 1)))
+(defn depth-of-inheritance-tree
+  "Returns the depth of the inheritance tree of Type t.
+  This only works for types whose source code has been parsed, but not for
+  types that were merely referenced in some jar.  For example, the jamopp model
+  does not contain the information that java.lang.Integer extends
+  java.lang.Number, so that its DIT is actually 2, not 1."
+  [t]
+  (let [supers (reachables t [p-seq :extends :classifierReferences :target])]
+    (cond
+     (seq supers) (inc (apply max (map depth-of-inheritance-tree supers)))
+     (let [cu (econtainer t)]
+       (= (eget cu :name) "java.lang.Object.java")) 0
+     :else 1)))
 
-;; (defn classes-by-depth-of-inheritance-tree
-;;   [g]
-;;   (apply-metric g depth-of-inheritance-tree))
+(defn classes-by-depth-of-inheritance-tree
+  [g]
+  (apply-metric g depth-of-inheritance-tree))
 
-;; (defn classes-by-depth-of-inheritance-tree-parallel
-;;   [g]
-;;   (apply-metric-parallel g depth-of-inheritance-tree))
-
-;; (defn classes-by-depth-of-inheritance-tree-forkjoin
-;;   [g]
-;;   (apply-metric-forkjoin g depth-of-inheritance-tree))
+(defn classes-by-depth-of-inheritance-tree-forkjoin
+  [g]
+  (apply-metric-forkjoin g depth-of-inheritance-tree))
 
 
 ;;*** Coupling between Objects

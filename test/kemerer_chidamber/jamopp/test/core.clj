@@ -3,6 +3,7 @@
   (:use [funnyqt.emf.core])
   (:use [funnyqt.emf.query])
   (:use [funnyqt.generic])
+  (:use kemerer-chidamber.test.generic)
   (:use [clojure.test])
   (:require [clojure.java.io :as io]))
 
@@ -40,3 +41,18 @@
   (is (thrown-with-msg? RuntimeException
         #"No such ConcreteClassifier .*"
         (concrete-classifier-by-name (jm) 'de.uni_koblenz.foo.Bar))))
+
+(deftest benchmark
+  (println "Running with a JaMoPP Model")
+  (println "===========================")
+  (let [m (jm)
+        iterations 2]
+      (dotimes [i iterations]
+        (println)
+        (println "Run" (inc i) "/" iterations)
+        (println)
+        (System/gc)
+
+        (do-timing m "Depth of Inheritance Tree:"
+                   classes-by-depth-of-inheritance-tree
+                   classes-by-depth-of-inheritance-tree-forkjoin))))
