@@ -28,3 +28,5 @@
   (load-model "jgralab.xmi"))
 
 (def jm (memoize load-jgralab-model))
+
+

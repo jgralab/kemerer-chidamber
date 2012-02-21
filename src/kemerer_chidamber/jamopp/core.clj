@@ -1,61 +1,28 @@
 (ns kemerer-chidamber.jamopp.core
   (:use funnyqt.generic)
+  (:use funnyqt.utils)
   (:use funnyqt.emf.core)
   (:use funnyqt.emf.query))
 
 ;;* Convenience
 
-;; (defn fixup-package
-;;   [p n]
-;;   (doseq [cc (reachables p [p-seq :compilationUnits :classifiers])]
-;;     (print (str n "." (eget cc :name)) "==>")
-;;     (eset! cc :fullName (str n "." (eget cc :name)))
-;;     (println (eget cc :fullName)))
-;;   (doseq [sp (eget p :subpackages)]
-;;     (fixup-package sp (str n "." (eget sp :name)))))
-
-;; (defn fixup-model
-;;   [m]
-;;   (doseq [root (filter #(= "de" (eget % :name))
-;;                       (eallcontents m 'containers.Package))]
-;;     (fixup-package root (eget root :name))))
-
-;; (defn type-by-name
-;;   "Returns the Type with the given (fully qualified) name n."
-;;   [m n]
-;;   )
-
-;; (defn type-hierarchy
-;;   "Returns a map of t's type hierarchy."
-;;   [t]
-;;   (when t
-;;     (let [super (first (reachables t [p-seq [<-- 'IsSuperClassOf]
-;;                                       [<-- 'IsTypeDefinitionOf]]))
-;;           ifaces (reachables t [p-seq [<-- 'IsInterfaceOf]
-;;                                 [<-- 'IsTypeDefinitionOf]])]
-;;       {(value t :fullyQualifiedName)
-;;        {:super    (type-hierarchy super)
-;;         :ifaces   (map type-hierarchy ifaces)}})))
-
-;; (defn containment-hierarchy
-;;   "Returns a map of pkg's contents."
-;;   [pkg]
-;;   (let [subs (adjs pkg :subPackages)
-;;         types (reachables pkg
-;;                           [p-seq [<*>-- 'IsPartOf]
-;;                            [<-- 'IsSourceUsageIn]
-;;                            [<-- 'IsExternalDeclarationIn]
-;;                            [p-restr 'Type]])
-;;         classes (p-restr types 'ClassDefinition)
-;;         ifaces  (p-restr types 'InterfaceDefinition)
-;;         enums   (p-restr types 'EnumDefinition)
-;;         annos   (p-restr types 'AnnotationDefinition)]
-;;     {(value pkg :fullyQualifiedName)
-;;      {:classes  (map #(value % :name) classes)
-;;       :ifaces   (map #(value % :name) ifaces)
-;;       :enums    (map #(value % :name) enums)
-;;       :annos    (map #(value % :name) annos)
-;;       :packages (map containment-hierarchy subs)}}))
+(defn concrete-classifier-by-name
+  "Returns the Type with the given (fully qualified) name n."
+  [m n]
+  (let [nm (name n)
+        cun (str nm ".java")]
+    (if-let [cu (first (filter #(= (eget % :name) cun)
+                               (eallcontents m 'CompilationUnit)))]
+      (let [sn (last (clojure.string/split nm #"\."))]
+        (the #(= sn (eget % :name))
+             (eget cu :classifiers)))
+      (if-let [cs (filter #(= (eget % :name) nm)
+                          (eallcontents m 'ConcreteClassifier))]
+        (cond
+         (empty? cs) (error (format "No CompilationUnit for %s." nm))
+         (next cs)   (error (format "%s is ambiguous." nm))
+         :else       (first cs))
+        (error (format "No such ContreteClassifier %s." nm))))))
 
 
 ;;* Metrics
