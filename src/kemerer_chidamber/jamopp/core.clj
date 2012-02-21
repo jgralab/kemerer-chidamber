@@ -28,16 +28,25 @@
 
 ;;** Chidamber & Kemerer
 
+(defn class-qname
+  [c]
+  (eget (econtainer c) :name))
+
+(def jgralab-classes
+  (memoize
+   (fn [m]
+     (filter (fn [c]
+               (re-matches #"de\.uni_koblenz\.jgralab\..*"
+                           (class-qname c)))
+             (eallcontents m 'Class)))))
+
 (defn apply-metric
   "Applies the given metric to all JGraLab classes."
   [m metric]
   (sort
    (seq-compare (constantly 0) #(- %2 %1) compare)
-   (for [c (eallcontents m 'Class)
-         :let [cu (econtainer c)
-               cun (eget cu :name)]
-         :when (re-matches #"de\.uni_koblenz\.jgralab\..*" cun)]
-     [c (metric c) cun])))
+   (for [c (jgralab-classes m)]
+     [c (metric c) (class-qname c)])))
 
 (def ^java.util.concurrent.ForkJoinPool
   fj-pool (java.util.concurrent.ForkJoinPool.))
@@ -48,16 +57,12 @@
   [m metric]
   (sort
    (seq-compare (constantly 0) #(- %2 %1) compare)
-   (let [class-qname (fn [c] (eget (econtainer c) :name))
-         res (doall (map (fn [c]
+   (let [res (doall (map (fn [c]
                            (let [^java.util.concurrent.Callable f
                                  (fn []
                                    [c (metric c) (class-qname c)])]
                              (.submit fj-pool f)))
-                         (filter (fn [c]
-                                   (re-matches #"de\.uni_koblenz\.jgralab\..*"
-                                               (class-qname c)))
-                                 (eallcontents m 'Class))))]
+                         (jgralab-classes m)))]
      (map #(.get ^java.util.concurrent.ForkJoinTask %) res))))
 
 ;;*** Depth of Inheritance Tree
@@ -148,23 +153,30 @@
 
 ;;*** Number of Children
 
-;; (defn subtypes
-;;   "Returns all direct subtypes of the given type t."
-;;   [t]
-;;   (reachables t [p-seq [--> 'IsTypeDefinitionOf]
-;;                        [--> 'IsSuperClassOf]]))
+(defn subtypes
+  "Returns all direct subtypes of the given type t that are contained in
+  classifiers."
+  [classes t]
+  ;; Well, this is pretty slow, because all the needed references are
+  ;; unidirectional.  You can get the superclass quickly, but getting
+  ;; subclasses is hardly possible.
+  (mapcat (fn [c]
+            (let [supers (seq (reachables c [p-seq :extends
+                                             :classifierReferences
+                                             :target]))]
+              (when (member? t supers)
+                [c])))
+          classes))
 
-;; (defn classes-by-number-of-children
-;;   [g]
-;;   (apply-metric g #(count (subtypes %))))
+(defn classes-by-number-of-children
+  [m]
+  (let [jg-classes (jgralab-classes m)]
+    (apply-metric m #(count (subtypes jg-classes %)))))
 
-;; (defn classes-by-number-of-children-parallel
-;;   [g]
-;;   (apply-metric-parallel g #(count (subtypes %))))
-
-;; (defn classes-by-number-of-children-forkjoin
-;;   [g]
-;;   (apply-metric-forkjoin g #(count (subtypes %))))
+(defn classes-by-number-of-children-forkjoin
+  [m]
+  (let [jg-classes (jgralab-classes m)]
+    (apply-metric-forkjoin m #(count (subtypes jg-classes %)))))
 
 ;;*** Response for a Class
 

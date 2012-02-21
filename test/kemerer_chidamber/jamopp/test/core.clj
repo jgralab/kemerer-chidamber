@@ -25,7 +25,9 @@
 (defn load-jgralab-model
   []
   (when-not (.exists (io/file "jgralab.xmi"))
+    (println "Gunzipping jgralab.xmi.gz...")
     (gunzip "jgralab.xmi.gz" "jgralab.xmi"))
+  (println "Loading JaMoPP model of jgralab...")
   (load-model "jgralab.xmi"))
 
 (def jm (memoize load-jgralab-model))
@@ -55,4 +57,9 @@
 
         (do-timing m "Depth of Inheritance Tree:"
                    classes-by-depth-of-inheritance-tree
-                   classes-by-depth-of-inheritance-tree-forkjoin))))
+                   classes-by-depth-of-inheritance-tree-forkjoin)
+
+        (do-timing m "Number of Children:"
+                   classes-by-number-of-children
+                   classes-by-number-of-children-forkjoin))))
+
