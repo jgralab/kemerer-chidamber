@@ -29,4 +29,14 @@
 
 (def jm (memoize load-jgralab-model))
 
-
+(deftest test-concrete-classifier-by-name
+  ;; Simple name
+  (is (concrete-classifier-by-name (jm) 'Vertex))
+  ;; Qualified name
+  (is (concrete-classifier-by-name (jm) 'de.uni_koblenz.jgralab.Vertex))
+  (is (thrown-with-msg? RuntimeException
+        #".* is ambiguous\."
+        (concrete-classifier-by-name (jm) 'VertexImpl)))
+  (is (thrown-with-msg? RuntimeException
+        #"No such ConcreteClassifier .*"
+        (concrete-classifier-by-name (jm) 'de.uni_koblenz.foo.Bar))))

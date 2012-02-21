@@ -16,13 +16,12 @@
       (let [sn (last (clojure.string/split nm #"\."))]
         (the #(= sn (eget % :name))
              (eget cu :classifiers)))
-      (if-let [cs (filter #(= (eget % :name) nm)
-                          (eallcontents m 'ConcreteClassifier))]
+      (if-let [cs (seq (filter #(= (eget % :name) nm)
+                               (eallcontents m 'ConcreteClassifier)))]
         (cond
-         (empty? cs) (error (format "No CompilationUnit for %s." nm))
          (next cs)   (error (format "%s is ambiguous." nm))
          :else       (first cs))
-        (error (format "No such ContreteClassifier %s." nm))))))
+        (error (format "No such ConcreteClassifier %s." nm))))))
 
 
 ;;* Metrics
