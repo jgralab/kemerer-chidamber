@@ -47,8 +47,27 @@
 (deftest benchmark
   (println "Running with a JaMoPP Model")
   (println "===========================")
-  (let [m (jm)
-        iterations 2]
+  ;; Restrict to only those uris for a slightly faster EClass lookup
+  (with-ns-uris ["http://www.emftext.org/java/arrays"
+                 "http://www.emftext.org/java/instantiations"
+                 "http://www.emftext.org/java/parameters"
+                 "http://www.emftext.org/java/commons"
+                 "http://www.emftext.org/java/statements"
+                 "http://www.emftext.org/java/members"
+                 "http://www.emftext.org/java/classifiers"
+                 "http://www.emftext.org/java/generics"
+                 "http://www.emftext.org/java/modifiers"
+                 "http://www.emftext.org/java/containers"
+                 "http://www.emftext.org/java/imports"
+                 "http://www.emftext.org/java/literals"
+                 "http://www.emftext.org/java/references"
+                 "http://www.emftext.org/java/operators"
+                 "http://www.emftext.org/java/expressions"
+                 "http://www.emftext.org/java/types"
+                 "http://www.emftext.org/java/annotations"
+                 "http://www.emftext.org/java/variables"]
+    (let [m (jm)
+          iterations 2]
       (dotimes [i iterations]
         (println)
         (println "Run" (inc i) "/" iterations)
@@ -61,5 +80,9 @@
 
         (do-timing m "Number of Children:"
                    classes-by-number-of-children
-                   classes-by-number-of-children-forkjoin))))
+                   classes-by-number-of-children-forkjoin)
+
+        (do-timing m "Response for a Class:"
+                   classes-by-response-for-a-class
+                   classes-by-response-for-a-class-forkjoin)))))
 

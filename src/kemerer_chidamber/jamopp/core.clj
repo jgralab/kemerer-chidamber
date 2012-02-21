@@ -180,30 +180,26 @@
 
 ;;*** Response for a Class
 
-;; (defn response-set
-;;   "Returns the response set of the given type t."
-;;   [t]
-;;   (let [own-methods (reachables t [p-seq [<>-- 'IsClassBlockOf]
-;;                                          [<>-- 'IsMemberOf]
-;;                                          [p-restr 'MethodDeclaration]])
-;;         called-methods (set (mapcat
-;;                              #(reachables % [p-seq [<>-- 'IsBodyOfMethod]
-;;                                                    [<-- 'IsStatementOf]
-;;                                                    [<-- 'IsDeclarationOfInvokedMethod]])
-;;                              own-methods))]
-;;     (clojure.set/union own-methods called-methods)))
+(defn response-set
+  "Returns the response set of the given type t."
+  [t]
+  (let [own-methods (reachables t [p-seq  :members
+                                   [p-restr 'members.ClassMethod]])
+        called-methods (set (mapcat
+                             #(reachables % [p-seq :statements
+                                             [p-* <>--]
+                                             [p-restr 'references.MethodCall]
+                                             :target])
+                             own-methods))]
+    (clojure.set/union own-methods called-methods)))
 
-;; (defn classes-by-response-for-a-class
-;;   [g]
-;;   (apply-metric g #(count (response-set %))))
+(defn classes-by-response-for-a-class
+  [g]
+  (apply-metric g #(count (response-set %))))
 
-;; (defn classes-by-response-for-a-class-parallel
-;;   [g]
-;;   (apply-metric-parallel g #(count (response-set %))))
-
-;; (defn classes-by-response-for-a-class-forkjoin
-;;   [g]
-;;   (apply-metric-forkjoin g #(count (response-set %))))
+(defn classes-by-response-for-a-class-forkjoin
+  [g]
+  (apply-metric-forkjoin g #(count (response-set %))))
 
 
 ;;*** Lack of Cohesion in Methods
