@@ -28,24 +28,23 @@
 
 ;;** Chidamber & Kemerer
 
+(def ^{:dynamic true
+       :doc "A function that should return all classes for which the metrics
+  should be calculated.  Defaults to all classes."}
+  *get-classes-fn*
+  (fn [m]
+    (eallcontents m 'Class)))
+
 (defn class-qname
   [c]
   (eget (econtainer c) :name))
-
-(def jgralab-classes
-  (memoize
-   (fn [m]
-     (filter (fn [c]
-               (re-matches #"de\.uni_koblenz\.jgralab\..*"
-                           (class-qname c)))
-             (eallcontents m 'Class)))))
 
 (defn apply-metric
   "Applies the given metric to all JGraLab classes."
   [m metric]
   (sort
    (seq-compare (constantly 0) #(- %2 %1) compare)
-   (for [c (jgralab-classes m)]
+   (for [c (*get-classes-fn* m)]
      [c (metric c) (class-qname c)])))
 
 (def ^java.util.concurrent.ForkJoinPool
@@ -62,7 +61,7 @@
                                  (fn []
                                    [c (metric c) (class-qname c)])]
                              (.submit fj-pool f)))
-                         (jgralab-classes m)))]
+                         (*get-classes-fn* m)))]
      (map #(.get ^java.util.concurrent.ForkJoinTask %) res))))
 
 ;;*** Depth of Inheritance Tree
@@ -170,12 +169,12 @@
 
 (defn classes-by-number-of-children
   [m]
-  (let [jg-classes (jgralab-classes m)]
+  (let [jg-classes (*get-classes-fn* m)]
     (apply-metric m #(count (subtypes jg-classes %)))))
 
 (defn classes-by-number-of-children-forkjoin
   [m]
-  (let [jg-classes (jgralab-classes m)]
+  (let [jg-classes (*get-classes-fn* m)]
     (apply-metric-forkjoin m #(count (subtypes jg-classes %)))))
 
 ;;*** Response for a Class

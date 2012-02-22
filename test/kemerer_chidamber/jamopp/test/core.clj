@@ -68,21 +68,28 @@
                  "http://www.emftext.org/java/variables"]
     (let [m (jm)
           iterations 2]
-      (dotimes [i iterations]
-        (println)
-        (println "Run" (inc i) "/" iterations)
-        (println)
-        (System/gc)
+      (binding [*get-classes-fn* (memoize
+                                  (fn [m]
+                                    (filter
+                                     (fn [c]
+                                       (re-matches #"de\.uni_koblenz\.jgralab\..*"
+                                                   (class-qname c)))
+                                     (eallcontents m 'Class))))]
+        (dotimes [i iterations]
+          (println)
+          (println "Run" (inc i) "/" iterations)
+          (println)
+          (System/gc)
 
-        (do-timing m "Depth of Inheritance Tree:"
-                   classes-by-depth-of-inheritance-tree
-                   classes-by-depth-of-inheritance-tree-forkjoin)
+          (do-timing m "Depth of Inheritance Tree:"
+                     classes-by-depth-of-inheritance-tree
+                     classes-by-depth-of-inheritance-tree-forkjoin)
 
-        (do-timing m "Number of Children:"
-                   classes-by-number-of-children
-                   classes-by-number-of-children-forkjoin)
+          (do-timing m "Number of Children:"
+                     classes-by-number-of-children
+                     classes-by-number-of-children-forkjoin)
 
-        (do-timing m "Response for a Class:"
-                   classes-by-response-for-a-class
-                   classes-by-response-for-a-class-forkjoin)))))
+          (do-timing m "Response for a Class:"
+                     classes-by-response-for-a-class
+                     classes-by-response-for-a-class-forkjoin))))))
 

@@ -74,41 +74,20 @@
 
 ;;** Chidamber & Kemerer
 
+(def ^{:dynamic true
+       :doc "A function that should return all classes for which the metrics
+  should be calculated.  Defaults to all classes."}
+  *get-classes-fn*
+  (fn [g]
+    (vseq g 'ClassDefinition)))
+
 (defn apply-metric
   "Applies the given metric to all JGraLab classes."
   [g metric]
   (sort
    (seq-compare (constantly 0) #(- %2 %1) compare)
-   (for [c (vseq g 'ClassDefinition)
-         :let [fqn (value c :fullyQualifiedName)]
-         :when (re-matches #"de\.uni_koblenz\.jgralab\..*" fqn)]
-     [c (metric c) fqn])))
-
-(def ^java.util.concurrent.ExecutorService
-  pool (java.util.concurrent.Executors/newFixedThreadPool
-        (-> (Runtime/getRuntime) .availableProcessors)))
-
-(defn apply-metric-parallel
-  "Applies the given metric to all JGraLab classes in parallel."
-  [g metric]
-  (sort
-   (seq-compare (constantly 0) #(- %2 %1) compare)
-   (let [classes (shuffle (vseq g 'ClassDefinition))
-         step (max 25 (quot (count classes)
-                            (* 10 (-> (Runtime/getRuntime)
-                                      .availableProcessors))))
-         chunks (partition step step [] classes)
-         tasks (map (fn [chunk]
-                      (fn []
-                        (doall ;; be eager!
-                         (map (fn [c]
-                                [c (metric c) (value c :fullyQualifiedName)])
-                              (filter #(re-matches #"de\.uni_koblenz\.jgralab\..*"
-                                                   (value % :fullyQualifiedName))
-                                      chunk)))))
-                    chunks)
-         ret (.invokeAll pool tasks)]
-     (mapcat #(.get ^java.util.concurrent.Future %) ret))))
+   (for [c (*get-classes-fn* g)]
+     [c (metric c) (value c :fullyQualifiedName)])))
 
 (def ^java.util.concurrent.ForkJoinPool
   fj-pool (java.util.concurrent.ForkJoinPool.))
@@ -124,9 +103,7 @@
                                  (fn []
                                    [c (metric c) (value c :fullyQualifiedName)])]
                              (.submit fj-pool f)))
-                         (filter #(re-matches #"de\.uni_koblenz\.jgralab\..*"
-                                              (value % :fullyQualifiedName))
-                                 (vseq g 'ClassDefinition))))]
+                         (*get-classes-fn* g)))]
      (map #(.get ^java.util.concurrent.ForkJoinTask %) res))))
 
 ;;*** Depth of Inheritance Tree
@@ -144,10 +121,6 @@
 (defn classes-by-depth-of-inheritance-tree
   [g]
   (apply-metric g depth-of-inheritance-tree))
-
-(defn classes-by-depth-of-inheritance-tree-parallel
-  [g]
-  (apply-metric-parallel g depth-of-inheritance-tree))
 
 (defn classes-by-depth-of-inheritance-tree-forkjoin
   [g]
@@ -174,10 +147,6 @@
 (defn classes-by-coupling-between-objects
   [g]
   (apply-metric g #(count (coupled-classes %))))
-
-(defn classes-by-coupling-between-objects-parallel
-  [g]
-  (apply-metric-parallel g #(count (coupled-classes %))))
 
 (defn classes-by-coupling-between-objects-forkjoin
   [g]
@@ -207,10 +176,6 @@
   [g]
   (apply-metric g weighted-method-per-class))
 
-(defn classes-by-weighted-methods-per-class-parallel
-  [g]
-  (apply-metric-parallel g weighted-method-per-class))
-
 (defn classes-by-weighted-methods-per-class-forkjoin
   [g]
   (apply-metric-forkjoin g weighted-method-per-class))
@@ -226,10 +191,6 @@
 (defn classes-by-number-of-children
   [g]
   (apply-metric g #(count (subtypes %))))
-
-(defn classes-by-number-of-children-parallel
-  [g]
-  (apply-metric-parallel g #(count (subtypes %))))
 
 (defn classes-by-number-of-children-forkjoin
   [g]
@@ -253,10 +214,6 @@
 (defn classes-by-response-for-a-class
   [g]
   (apply-metric g #(count (response-set %))))
-
-(defn classes-by-response-for-a-class-parallel
-  [g]
-  (apply-metric-parallel g #(count (response-set %))))
 
 (defn classes-by-response-for-a-class-forkjoin
   [g]
@@ -302,10 +259,6 @@
 (defn classes-by-lack-of-cohesion-in-methods
   [g]
   (apply-metric g lack-of-cohesion))
-
-(defn classes-by-lack-of-cohesion-in-methods-parallel
-  [g]
-  (apply-metric-parallel g lack-of-cohesion))
 
 (defn classes-by-lack-of-cohesion-in-methods-forkjoin
   [g]
