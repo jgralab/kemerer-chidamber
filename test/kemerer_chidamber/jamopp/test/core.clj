@@ -84,6 +84,10 @@
                      classes-by-depth-of-inheritance-tree
                      classes-by-depth-of-inheritance-tree-forkjoin)
 
+          (do-timing m "Coupling between Objects:"
+                     classes-by-coupling-between-objects
+                     classes-by-coupling-between-objects-forkjoin)
+
           (do-timing m "Weighted Methods per Class:"
                      classes-by-weighted-methods-per-class
                      classes-by-weighted-methods-per-class-forkjoin)

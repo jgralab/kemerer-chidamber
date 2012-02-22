@@ -12,12 +12,12 @@
   (let [nm (name n)
         cun (str nm ".java")]
     (if-let [cu (first (filter #(= (eget % :name) cun)
-                               (eallcontents m 'CompilationUnit)))]
+                               (eallobjects m 'CompilationUnit)))]
       (let [sn (last (clojure.string/split nm #"\."))]
         (the #(= sn (eget % :name))
              (eget cu :classifiers)))
       (if-let [cs (seq (filter #(= (eget % :name) nm)
-                               (eallcontents m 'ConcreteClassifier)))]
+                               (eallobjects m 'ConcreteClassifier)))]
         (cond
          (next cs)   (error (format "%s is ambiguous." nm))
          :else       (first cs))
@@ -33,7 +33,7 @@
   should be calculated.  Defaults to all classes."}
   *get-classes-fn*
   (fn [m]
-    (eallcontents m 'Class)))
+    (eallobjects m 'Class)))
 
 (defn class-qname
   [c]
@@ -92,32 +92,30 @@
 
 ;;*** Coupling between Objects
 
-;; (defn coupled-classes
-;;   "Given a Class `c', calculates all coupled classes."
-;;   [c]
-;;   (reachables c
-;;     [p-seq [<>-- 'IsClassBlockOf] [<>-- 'IsMemberOf]
-;;            [<-- ['IsBodyOfMethod 'IsFieldCreationOf]]
-;;            [p-* [<-- 'IsStatementOf]]
-;;            [p-alt
-;;              ;; Classes whose methods are called by c
-;;              [<-- 'IsDeclarationOfInvokedMethod]
-;;              ;; Classes whose Fields are accessed by c
-;;              [p-seq [<-- 'IsDeclarationOfAccessedField] [--> 'IsFieldCreationOf]]]
-;;            [--<> 'IsMemberOf] [--<> 'IsClassBlockOf]
-;;            [p-restr nil #(not (= c %1))]]))
+(defn coupled-classes
+  "Given a Class `c', calculates all coupled classes."
+  [c]
+  (reachables c
+    [p-seq :members
+     ;; :statements for ClassMethods, :initialValue for Fields
+     [p-alt :statements :initialValue]
+     [p-* [<>--]]
+     [p-restr '[references.MethodCall references.IdentifierReference]]
+     ;; Matches both the ClassMethod that is the target of a MethodCall as well
+     ;; as the Field that is the target of a IdentifierReference
+     :target
+     [p-restr '[members.ClassMethod members.Field]]
+     --<>
+     [p-restr 'Class #(not (= c %1))]]))
 
-;; (defn classes-by-coupling-between-objects
-;;   [g]
-;;   (apply-metric g #(count (coupled-classes %))))
+(defn classes-by-coupling-between-objects
+  [g]
+  (apply-metric g #(count (coupled-classes %))))
 
-;; (defn classes-by-coupling-between-objects-parallel
-;;   [g]
-;;   (apply-metric-parallel g #(count (coupled-classes %))))
+(defn classes-by-coupling-between-objects-forkjoin
+  [g]
+  (apply-metric-forkjoin g #(count (coupled-classes %))))
 
-;; (defn classes-by-coupling-between-objects-forkjoin
-;;   [g]
-;;   (apply-metric-forkjoin g #(count (coupled-classes %))))
 
 ;;*** Weighted Methods per Class
 
