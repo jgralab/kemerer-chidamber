@@ -23,12 +23,11 @@
           (println "Running with a STANDARD graph")
           (println "=============================")))
 
-      (binding [*get-classes-fn* (memoize
-                                  (fn [graph]
-                                    (filter
-                                     (fn [c] (re-matches #"de\.uni_koblenz\.jgralab\..*"
-                                                        (value c :fullyQualifiedName)))
-                                     (vseq graph 'ClassDefinition))))]
+      (binding [*get-classes-fn* (fn [graph]
+                                   (filter
+                                    (fn [c] (re-matches #"de\.uni_koblenz\.jgralab\..*"
+                                                       (value c :fullyQualifiedName)))
+                                    (vseq graph 'ClassDefinition)))]
         (dotimes [i iterations]
           (println)
           (println "Run" (inc i) "/" iterations)

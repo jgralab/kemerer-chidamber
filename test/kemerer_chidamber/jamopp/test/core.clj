@@ -68,13 +68,12 @@
                  "http://www.emftext.org/java/variables"]
     (let [m (jm)
           iterations 2]
-      (binding [*get-classes-fn* (memoize
-                                  (fn [m]
-                                    (filter
-                                     (fn [c]
-                                       (re-matches #"de\.uni_koblenz\.jgralab\..*"
-                                                   (class-qname c)))
-                                     (eallcontents m 'Class))))]
+      (binding [*get-classes-fn* (fn [m]
+                                   (filter
+                                    (fn [c]
+                                      (re-matches #"de\.uni_koblenz\.jgralab\..*"
+                                                  (class-qname c)))
+                                    (eallcontents m 'Class)))]
         (dotimes [i iterations]
           (println)
           (println "Run" (inc i) "/" iterations)
