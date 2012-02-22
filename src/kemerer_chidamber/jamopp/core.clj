@@ -37,7 +37,8 @@
 
 (defn class-qname
   [c]
-  (eget (econtainer c) :name))
+  (clojure.string/replace (eget (econtainer c) :name)
+                          #"\.java$" ""))
 
 (defn apply-metric
   "Applies the given metric to all JGraLab classes."
@@ -203,49 +204,44 @@
 
 ;;*** Lack of Cohesion in Methods
 
-;; (defn lack-of-cohesion
-;;   "Returns the lack of cohesion metric value of t."
-;;   [t]
-;;   (let [fields (reachables t [p-seq [<>-- 'IsClassBlockOf]
-;;                                     [<>-- 'IsMemberOf]
-;;                                     [p-restr 'Field]])
-;;         methods (reachables t [p-seq [<>-- 'IsClassBlockOf]
-;;                                      [<>-- 'IsMemberOf]
-;;                                      [p-restr 'MethodDefinition]])
-;;         accessed-fields (fn [m]
-;;                           (reachables m [p-seq [<>-- 'IsBodyOfMethod]
-;;                                                [p-* [<-- 'IsStatementOf]]
-;;                                                [<-- 'IsDeclarationOfAccessedField]
-;;                                                [p-restr nil #(member? % fields)]]))
-;;         method-field-map (apply hash-map (mapcat (fn [m] [m (accessed-fields m)])
-;;                                                  methods))
-;;         combinations (loop [ms methods, pairs []]
-;;                        (if (next ms)
-;;                          (recur (rest ms) (concat pairs
-;;                                                   (map (fn [n] [(first ms) n])
-;;                                                        (rest ms))))
-;;                          pairs))
-;;         results (for [[m1 m2] combinations
-;;                       :let [f1 (method-field-map m1)
-;;                             f2 (method-field-map m2)]]
-;;                   (if (seq (clojure.set/intersection f1 f2))
-;;                     :common-fields
-;;                     :disjoint-fields))
-;;         p (count (filter #(= % :disjoint-fields) results))
-;;         q (- (count results) p)]
-;;     (if (> p q)
-;;       (- p q)
-;;       0)))
+(defn lack-of-cohesion
+  "Returns the lack of cohesion metric value of t."
+  [t]
+  (let [fields (reachables t [p-seq :members
+                              [p-restr 'members.Field]])
+        methods (reachables t [p-seq :members
+                               [p-restr 'ClassMethod]])
+        accessed-fields (fn [m]
+                          (reachables m [p-seq :statements
+                                         [p-* <>--]
+                                         [p-restr 'references.IdentifierReference]
+                                         :target
+                                         [p-restr nil #(member? % fields)]]))
+        method-field-map (apply hash-map (mapcat (fn [m] [m (accessed-fields m)])
+                                                 methods))
+        combinations (loop [ms methods, pairs []]
+                       (if (next ms)
+                         (recur (rest ms) (concat pairs
+                                                  (map (fn [n] [(first ms) n])
+                                                       (rest ms))))
+                         pairs))
+        results (for [[m1 m2] combinations
+                      :let [f1 (method-field-map m1)
+                            f2 (method-field-map m2)]]
+                  (if (seq (clojure.set/intersection f1 f2))
+                    :common-fields
+                    :disjoint-fields))
+        p (count (filter #(= % :disjoint-fields) results))
+        q (- (count results) p)]
+    (if (> p q)
+      (- p q)
+      0)))
 
-;; (defn classes-by-lack-of-cohesion-in-methods
-;;   [g]
-;;   (apply-metric g lack-of-cohesion))
+(defn classes-by-lack-of-cohesion-in-methods
+  [g]
+  (apply-metric g lack-of-cohesion))
 
-;; (defn classes-by-lack-of-cohesion-in-methods-parallel
-;;   [g]
-;;   (apply-metric-parallel g lack-of-cohesion))
-
-;; (defn classes-by-lack-of-cohesion-in-methods-forkjoin
-;;   [g]
-;;   (apply-metric-forkjoin g lack-of-cohesion))
+(defn classes-by-lack-of-cohesion-in-methods-forkjoin
+  [g]
+  (apply-metric-forkjoin g lack-of-cohesion))
 

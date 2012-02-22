@@ -90,5 +90,9 @@
 
           (do-timing m "Response for a Class:"
                      classes-by-response-for-a-class
-                     classes-by-response-for-a-class-forkjoin))))))
+                     classes-by-response-for-a-class-forkjoin)
+
+          (do-timing m "Lack of Cohesion in Methods:"
+                     classes-by-lack-of-cohesion-in-methods
+                     classes-by-lack-of-cohesion-in-methods-forkjoin))))))
 

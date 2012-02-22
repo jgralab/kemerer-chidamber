@@ -135,7 +135,7 @@
   (reachables c
     [p-seq [<>-- 'IsClassBlockOf] [<>-- 'IsMemberOf]
            [<-- ['IsBodyOfMethod 'IsFieldCreationOf]]
-           [p-* [<-- 'IsStatementOf]]
+           [p-* [<>-- 'IsStatementOf]]
            [p-alt
              ;; Classes whose methods are called by c
              [<-- 'IsDeclarationOfInvokedMethod]
@@ -206,7 +206,7 @@
                                          [p-restr 'MethodDeclaration]])
         called-methods (set (mapcat
                              #(reachables % [p-seq [<>-- 'IsBodyOfMethod]
-                                                   [<-- 'IsStatementOf]
+                                                   [<>-- 'IsStatementOf]
                                                    [<-- 'IsDeclarationOfInvokedMethod]])
                              own-methods))]
     (clojure.set/union own-methods called-methods)))
@@ -226,16 +226,18 @@
   "Returns the lack of cohesion metric value of t."
   [t]
   (let [fields (reachables t [p-seq [<>-- 'IsClassBlockOf]
-                                    [<>-- 'IsMemberOf]
-                                    [p-restr 'Field]])
+                              [<>-- 'IsMemberOf]
+                              [p-restr 'Field]])
         methods (reachables t [p-seq [<>-- 'IsClassBlockOf]
-                                     [<>-- 'IsMemberOf]
-                                     [p-restr 'MethodDefinition]])
+                               [<>-- 'IsMemberOf]
+                               [p-restr 'MethodDefinition]])
         accessed-fields (fn [m]
                           (reachables m [p-seq [<>-- 'IsBodyOfMethod]
-                                               [p-* [<-- 'IsStatementOf]]
-                                               [<-- 'IsDeclarationOfAccessedField]
-                                               [p-restr nil #(member? % fields)]]))
+                                                 [p-* [<>-- 'IsStatementOf]]
+                                                 [p-restr 'FieldAccess]
+                                                 [<-- 'IsDeclarationOfAccessedField]
+                                                 [--> 'IsFieldCreationOf]
+                                                 [p-restr nil #(member? % fields)]]))
         method-field-map (apply hash-map (mapcat (fn [m] [m (accessed-fields m)])
                                                  methods))
         combinations (loop [ms methods, pairs []]
