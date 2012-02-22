@@ -84,6 +84,10 @@
                      classes-by-depth-of-inheritance-tree
                      classes-by-depth-of-inheritance-tree-forkjoin)
 
+          (do-timing m "Weighted Methods per Class:"
+                     classes-by-weighted-methods-per-class
+                     classes-by-weighted-methods-per-class-forkjoin)
+
           (do-timing m "Number of Children:"
                      classes-by-number-of-children
                      classes-by-number-of-children-forkjoin)
@@ -95,4 +99,3 @@
           (do-timing m "Lack of Cohesion in Methods:"
                      classes-by-lack-of-cohesion-in-methods
                      classes-by-lack-of-cohesion-in-methods-forkjoin))))))
-

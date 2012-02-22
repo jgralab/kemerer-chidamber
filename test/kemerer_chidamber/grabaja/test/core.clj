@@ -12,7 +12,9 @@
   (load-graph "jgralab.tg.gz" :standard))
 
 (deftest benchmark-generic-vs-standard
-  (doseq [f [load-standard load-generic]]
+  ;; Just run with a generic graph...
+  (doseq [f [ ;; load-standard
+             load-generic]]
     (let [g (f)
           iterations 2]
       (if (instance? de.uni_koblenz.jgralab.impl.generic.GenericGraphImpl g)

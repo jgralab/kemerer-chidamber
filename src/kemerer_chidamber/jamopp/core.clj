@@ -121,35 +121,33 @@
 
 ;;*** Weighted Methods per Class
 
-;; (defn cyclomatic-complexity
-;;   "Returns the cyclomatic complexity of the given method."
-;;   [m]
-;;   (-> (reachables
-;;         m [p-seq [<>-- 'IsBodyOfMethod]
-;;                  [p-* [<>-- 'IsStatementOf]]
-;;                  [p-restr '[If Case Default For DoWhile While]]])
-;;       count
-;;       inc))
+(defn cyclomatic-complexity
+  "Returns the cyclomatic complexity of the given method."
+  [m]
+  (-> (reachables
+       m [p-seq :statements
+          [p-* <>--]
+          [p-restr '[statements.NormalSwitchCase statements.DefaultSwitchCase
+                     statements.Condition statements.ForLoop
+                     statements.DoWhileLoop statements.WhileLoop]]])
+      count
+      inc))
 
-;; (defn weighted-method-per-class
-;;   "Returns the WMC metric for the given class c."
-;;   [c]
-;;   (reduce + (map cyclomatic-complexity
-;;                  (reachables c [p-seq [<>-- 'IsClassBlockOf]
-;;                                       [<>-- 'IsMemberOf]
-;;                                       [p-restr 'MethodDefinition]]))))
+(defn weighted-method-per-class
+  "Returns the WMC metric for the given class c."
+  [c]
+  (reduce + (map cyclomatic-complexity
+                 (reachables c [p-seq :members
+                                      [p-restr 'members.ClassMethod]]))))
 
-;; (defn classes-by-weighted-methods-per-class
-;;   [g]
-;;   (apply-metric g weighted-method-per-class))
+(defn classes-by-weighted-methods-per-class
+  [g]
+  (apply-metric g weighted-method-per-class))
 
-;; (defn classes-by-weighted-methods-per-class-parallel
-;;   [g]
-;;   (apply-metric-parallel g weighted-method-per-class))
+(defn classes-by-weighted-methods-per-class-forkjoin
+  [g]
+  (apply-metric-forkjoin g weighted-method-per-class))
 
-;; (defn classes-by-weighted-methods-per-class-forkjoin
-;;   [g]
-;;   (apply-metric-forkjoin g weighted-method-per-class))
 
 ;;*** Number of Children
 
@@ -210,7 +208,7 @@
   (let [fields (reachables t [p-seq :members
                               [p-restr 'members.Field]])
         methods (reachables t [p-seq :members
-                               [p-restr 'ClassMethod]])
+                               [p-restr 'members.ClassMethod]])
         accessed-fields (fn [m]
                           (reachables m [p-seq :statements
                                          [p-* <>--]
