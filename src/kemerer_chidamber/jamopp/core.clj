@@ -157,9 +157,9 @@
   ;; unidirectional.  You can get the superclass quickly, but getting
   ;; subclasses is hardly possible.
   (mapcat (fn [c]
-            (let [supers (seq (reachables c [p-seq :extends
-                                             :classifierReferences
-                                             :target]))]
+            (let [supers (reachables c [p-seq :extends
+                                        :classifierReferences
+                                        :target])]
               (when (member? t supers)
                 [c])))
           classes))
@@ -187,7 +187,7 @@
                                              [p-restr 'references.MethodCall]
                                              :target])
                              own-methods))]
-    (clojure.set/union own-methods called-methods)))
+    (into own-methods called-methods)))
 
 (defn classes-by-response-for-a-class
   [g]

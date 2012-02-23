@@ -209,7 +209,7 @@
                                                    [<>-- 'IsStatementOf]
                                                    [<-- 'IsDeclarationOfInvokedMethod]])
                              own-methods))]
-    (clojure.set/union own-methods called-methods)))
+    (into own-methods called-methods)))
 
 (defn classes-by-response-for-a-class
   [g]
