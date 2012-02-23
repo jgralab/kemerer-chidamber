@@ -233,11 +233,10 @@
                                [p-restr 'MethodDefinition]])
         accessed-fields (fn [m]
                           (reachables m [p-seq [<>-- 'IsBodyOfMethod]
-                                                 [p-* [<>-- 'IsStatementOf]]
-                                                 [p-restr 'FieldAccess]
-                                                 [<-- 'IsDeclarationOfAccessedField]
-                                                 [--> 'IsFieldCreationOf]
-                                                 [p-restr nil #(member? % fields)]]))
+                                         [p-* [<>-- 'IsStatementOf]]
+                                         [<-- 'IsDeclarationOfAccessedField]
+                                         [--> 'IsFieldCreationOf]
+                                         [p-restr nil #(member? % fields)]]))
         method-field-map (apply hash-map (mapcat (fn [m] [m (accessed-fields m)])
                                                  methods))
         combinations (loop [ms methods, pairs []]
