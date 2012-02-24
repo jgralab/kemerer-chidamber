@@ -55,15 +55,17 @@
   "Applies the given metric to all JGraLab classes in parallel using a
   ForkJoinPool."
   [m metric]
-  (sort
-   (seq-compare (constantly 0) #(- %2 %1) compare)
-   (let [res (doall (map (fn [c]
-                           (let [^java.util.concurrent.Callable f
-                                 (fn []
-                                   [c (metric c) (class-qname c)])]
-                             (.submit fj-pool f)))
-                         (*get-classes-fn* m)))]
-     (map #(.get ^java.util.concurrent.ForkJoinTask %) res))))
+  (compile-if (Class/forName "java.util.concurrent.ForkJoinTask")
+              (sort
+               (seq-compare (constantly 0) #(- %2 %1) compare)
+               (let [res (doall (map (fn [c]
+                                       (let [^java.util.concurrent.Callable f
+                                             (fn []
+                                               [c (metric c) (class-qname c)])]
+                                         (.submit fj-pool f)))
+                                     (*get-classes-fn* m)))]
+                 (map #(.get ^java.util.concurrent.ForkJoinTask %) res)))
+              (println "Sorry, ForkJoin application disabled.  Get a JDK7.")))
 
 ;;*** Depth of Inheritance Tree
 
