@@ -24,7 +24,9 @@ $ lein deps
 - Run the tests/benchmarks with:
 
 ```
-$ lein test
+$ lein test                                     # All benchmarks: GraBaJa & JaMoPP
+$ lein test kemerer-chidamber.grabaja.test.core # Only GraBaJa
+$ lein test kemerer-chidamber.jamopp.test.core  # Only JaMoPP
 ```
 
 ## License
