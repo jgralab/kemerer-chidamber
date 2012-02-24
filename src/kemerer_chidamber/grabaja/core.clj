@@ -90,8 +90,10 @@
    (for [c (*get-classes-fn* g)]
      [c (metric c) (value c :fullyQualifiedName)])))
 
-(def ^java.util.concurrent.ForkJoinPool
-  fj-pool (java.util.concurrent.ForkJoinPool.))
+(u/compile-if (Class/forName "java.util.concurrent.ForkJoinTask")
+              (def ^java.util.concurrent.ForkJoinPool
+                fj-pool (java.util.concurrent.ForkJoinPool.))
+              nil)
 
 (defn apply-metric-forkjoin
   "Applies the given metric to all JGraLab classes in parallel using a
