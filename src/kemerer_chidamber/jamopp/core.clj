@@ -67,7 +67,9 @@
                                          (.submit fj-pool f)))
                                      (*get-classes-fn* m)))]
                  (map #(.get ^java.util.concurrent.ForkJoinTask %) res)))
-              (println "Sorry, ForkJoin application disabled.  Get a JDK7.")))
+              (do (println "Sorry, ForkJoin application disabled.  Get a JDK7."
+                           "Right now, we are simply falling back to sequential application.")
+                    (apply-metric g metric))))
 
 ;;*** Depth of Inheritance Tree
 
