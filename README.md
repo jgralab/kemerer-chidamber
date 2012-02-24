@@ -11,18 +11,17 @@ test automation.
 
 Getting started is really simple:
 
-1. Install the `lein` shell (or bat) script as explained in the
-**Installation** section of the
-[Leiningen](https://github.com/technomancy/leiningen) page.
+- Install the `lein` shell (or bat) script as explained in the **Installation**
+section of the [Leiningen](https://github.com/technomancy/leiningen) page.
 
-2. Fetch the project's dependencies:
+- Fetch the project's dependencies:
 
 ```
 $ cd kemerer-chidamber
 $ lein deps
 ```
 
-3. Run the tests/benchmarks with:
+- Run the tests/benchmarks with:
 
 ```
 $ lein test
