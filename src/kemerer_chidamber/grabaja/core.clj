@@ -1,8 +1,8 @@
 (ns kemerer-chidamber.grabaja.core
-  (:use funnyqt.generic)
   (:require [funnyqt.utils :as u])
-  (:use funnyqt.tg.core)
-  (:use funnyqt.tg.query))
+  (:use funnyqt.tg)
+  (:use funnyqt.query)
+  (:use funnyqt.query.tg))
 
 ;;* Convenience
 

@@ -1,9 +1,9 @@
 (ns kemerer-chidamber.grabaja.test.core
-  (:use [kemerer-chidamber.grabaja.core])
+  (:use kemerer-chidamber.grabaja.core)
   (:use kemerer-chidamber.test.generic)
-  (:use [funnyqt.tg.core])
-  (:use [funnyqt.tg.query])
-  (:use [clojure.test]))
+  (:use funnyqt.tg)
+  (:use funnyqt.query.tg)
+  (:use clojure.test))
 
 (defn load-generic []
   (load-graph "jgralab.tg.gz"))

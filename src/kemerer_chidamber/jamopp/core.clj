@@ -1,8 +1,8 @@
 (ns kemerer-chidamber.jamopp.core
-  (:use funnyqt.generic)
   (:use funnyqt.utils)
-  (:use funnyqt.emf.core)
-  (:use funnyqt.emf.query))
+  (:use funnyqt.emf)
+  (:use funnyqt.query)
+  (:use funnyqt.query.emf))
 
 ;;* Convenience
 
