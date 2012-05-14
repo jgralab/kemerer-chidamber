@@ -2,3 +2,4 @@
 .lein-failures
 lib/
 jgralab.xmi
+target/

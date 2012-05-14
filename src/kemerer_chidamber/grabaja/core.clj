@@ -77,10 +77,8 @@
 
 (def ^{:dynamic true
        :doc "A function that should return all classes for which the metrics
-  should be calculated.  Defaults to all classes."}
-  *get-classes-fn*
-  (fn [g]
-    (vseq g 'ClassDefinition)))
+  should be calculated."}
+  *get-classes-fn* nil)
 
 (defn apply-metric
   "Applies the given metric to all JGraLab classes."
@@ -91,8 +89,22 @@
      [c (metric c) (value c :fullyQualifiedName)])))
 
 (u/compile-if (Class/forName "java.util.concurrent.ForkJoinTask")
-              (def ^java.util.concurrent.ForkJoinPool
-                fj-pool (java.util.concurrent.ForkJoinPool.))
+              (do
+                (def fj-pool (java.util.concurrent.ForkJoinPool.))
+                (defn fj-do [vs metric]
+                  (proxy [java.util.concurrent.RecursiveTask] []
+                    (compute []
+                      (if (> (count vs) 5)
+                        (map (fn [c]
+                               [c (metric c) (value c :fullyQualifiedName)])
+                             vs)
+                        (let [half (int (/ (count vs) 2))
+                              vs1 (subvec vs 0 half)
+                              fj1 (.fork ^java.util.concurrent.RecursiveTask (fj-do vs1 metric))
+                              vs2 (subvec vs half)
+                              r2 (.compute ^java.util.concurrent.RecursiveTask (fj-do vs2 metric))
+                              r1 (.join ^java.util.concurrent.RecursiveTask fj1)]
+                          (concat r1 r2)))))))
               nil)
 
 (defn apply-metric-forkjoin
@@ -102,16 +114,12 @@
   (u/compile-if (Class/forName "java.util.concurrent.ForkJoinTask")
                 (sort
                  (seq-compare (constantly 0) #(- %2 %1) compare)
-                 (let [res (doall (map (fn [c]
-                                         (let [^java.util.concurrent.Callable f
-                                               (fn []
-                                                 [c (metric c) (value c :fullyQualifiedName)])]
-                                           (.submit fj-pool f)))
-                                       (*get-classes-fn* g)))]
-                   (map #(.get ^java.util.concurrent.ForkJoinTask %) res)))
+                 (let [vs (vec (*get-classes-fn* g))]
+                   (.invoke fj-pool ^java.util.concurrent.RecursiveTask (fj-do vs metric))))
                 (do (println "Sorry, ForkJoin application disabled.  Get a JDK7."
                              "Right now, we are simply falling back to sequential application.")
                     (apply-metric g metric))))
+
 
 ;;*** Depth of Inheritance Tree
 

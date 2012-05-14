@@ -1,5 +1,5 @@
 (ns kemerer-chidamber.jamopp.core
-  (:use funnyqt.utils)
+  (:require [funnyqt.utils :as u])
   (:use funnyqt.emf)
   (:use funnyqt.query)
   (:use funnyqt.query.emf))
@@ -19,57 +19,68 @@
       (if-let [cs (seq (filter #(= (eget % :name) nm)
                                (eallobjects m 'ConcreteClassifier)))]
         (cond
-         (next cs)   (error (format "%s is ambiguous." nm))
+         (next cs)   (u/error (format "%s is ambiguous." nm))
          :else       (first cs))
-        (error (format "No such ConcreteClassifier %s." nm))))))
+        (u/error (format "No such ConcreteClassifier %s." nm))))))
 
 
 ;;* Metrics
 
 ;;** Chidamber & Kemerer
 
-(def ^{:dynamic true
-       :doc "A function that should return all classes for which the metrics
-  should be calculated.  Defaults to all classes."}
-  *get-classes-fn*
-  (fn [m]
-    (eallobjects m 'Class)))
 
 (defn class-qname
   [c]
   (clojure.string/replace (eget (econtainer c) :name)
                           #"\.java$" ""))
 
+(def ^{:dynamic true
+       :doc "A function that should return all classes for which the metrics
+  should be calculated."}
+  *get-classes-fn*
+  (fn [m]
+    (eallobjects m 'Class)))
+
 (defn apply-metric
   "Applies the given metric to all JGraLab classes."
-  [m metric]
+  [g metric]
   (sort
    (seq-compare (constantly 0) #(- %2 %1) compare)
-   (for [c (*get-classes-fn* m)]
+   (for [c (*get-classes-fn* g)]
      [c (metric c) (class-qname c)])))
 
-(compile-if (Class/forName "java.util.concurrent.ForkJoinTask")
-            (def ^java.util.concurrent.ForkJoinPool
-              fj-pool (java.util.concurrent.ForkJoinPool.))
-            nil)
+(u/compile-if (Class/forName "java.util.concurrent.ForkJoinTask")
+              (do
+                (def fj-pool (java.util.concurrent.ForkJoinPool.))
+                (defn fj-do [vs metric]
+                  (proxy [java.util.concurrent.RecursiveTask] []
+                    (compute []
+                      (if (> (count vs) 5)
+                        (map (fn [c]
+                               [c (metric c) (class-qname c)])
+                             vs)
+                        (let [half (int (/ (count vs) 2))
+                              vs1 (subvec vs 0 half)
+                              fj1 (.fork ^java.util.concurrent.RecursiveTask (fj-do vs1 metric))
+                              vs2 (subvec vs half)
+                              r2 (.compute ^java.util.concurrent.RecursiveTask (fj-do vs2 metric))
+                              r1 (.join ^java.util.concurrent.RecursiveTask fj1)]
+                          (concat r1 r2)))))))
+              nil)
 
 (defn apply-metric-forkjoin
   "Applies the given metric to all JGraLab classes in parallel using a
   ForkJoinPool."
-  [m metric]
-  (compile-if (Class/forName "java.util.concurrent.ForkJoinTask")
-              (sort
-               (seq-compare (constantly 0) #(- %2 %1) compare)
-               (let [res (doall (map (fn [c]
-                                       (let [^java.util.concurrent.Callable f
-                                             (fn []
-                                               [c (metric c) (class-qname c)])]
-                                         (.submit fj-pool f)))
-                                     (*get-classes-fn* m)))]
-                 (map #(.get ^java.util.concurrent.ForkJoinTask %) res)))
-              (do (println "Sorry, ForkJoin application disabled.  Get a JDK7."
-                           "Right now, we are simply falling back to sequential application.")
+  [g metric]
+  (u/compile-if (Class/forName "java.util.concurrent.ForkJoinTask")
+                (sort
+                 (seq-compare (constantly 0) #(- %2 %1) compare)
+                 (let [vs (vec (*get-classes-fn* g))]
+                   (.invoke fj-pool ^java.util.concurrent.RecursiveTask (fj-do vs metric))))
+                (do (println "Sorry, ForkJoin application disabled.  Get a JDK7."
+                             "Right now, we are simply falling back to sequential application.")
                     (apply-metric g metric))))
+
 
 ;;*** Depth of Inheritance Tree
 

@@ -7,4 +7,5 @@
   (let [r1 (time (doall (sv g)))]
     (print "    - ForkJoin:   ")
     (let [r2 (time (doall (fjv g)))]
+      (is (= (count r1) (count r2)))
       (is (= r1 r2)))))
