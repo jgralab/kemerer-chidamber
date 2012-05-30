@@ -94,7 +94,7 @@
                 (defn fj-do [vs metric]
                   (proxy [java.util.concurrent.RecursiveTask] []
                     (compute []
-                      (if (> (count vs) 5)
+                      (if (< (count vs) 5)
                         (map (fn [c]
                                [c (metric c) (value c :fullyQualifiedName)])
                              vs)
