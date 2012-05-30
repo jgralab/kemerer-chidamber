@@ -94,17 +94,18 @@
                 (defn fj-do [vs metric]
                   (proxy [java.util.concurrent.RecursiveTask] []
                     (compute []
-                      (if (< (count vs) 5)
-                        (map (fn [c]
-                               [c (metric c) (value c :fullyQualifiedName)])
-                             vs)
-                        (let [half (int (/ (count vs) 2))
-                              vs1 (subvec vs 0 half)
-                              fj1 (.fork ^java.util.concurrent.RecursiveTask (fj-do vs1 metric))
-                              vs2 (subvec vs half)
-                              r2 (.compute ^java.util.concurrent.RecursiveTask (fj-do vs2 metric))
-                              r1 (.join ^java.util.concurrent.RecursiveTask fj1)]
-                          (concat r1 r2)))))))
+                      (doall
+                       (if (< (count vs) 5)
+                         (map (fn [c]
+                                [c (metric c) (value c :fullyQualifiedName)])
+                              vs)
+                         (let [half (int (/ (count vs) 2))
+                               vs1 (subvec vs 0 half)
+                               fj1 (.fork ^java.util.concurrent.RecursiveTask (fj-do vs1 metric))
+                               vs2 (subvec vs half)
+                               r2 (.compute ^java.util.concurrent.RecursiveTask (fj-do vs2 metric))
+                               r1 (.join ^java.util.concurrent.RecursiveTask fj1)]
+                           (concat r1 r2))))))))
               nil)
 
 (defn apply-metric-forkjoin
