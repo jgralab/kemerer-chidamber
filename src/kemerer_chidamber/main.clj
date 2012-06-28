@@ -79,20 +79,28 @@
 (def load-jamopp-mm (memoize (fn [] (emf/load-metamodel "java.ecore"))))
 
 (defn -main [& args]
-  (when-not (#{1 2 3} (count args))
-    (println "Usage: lein run <syntax-graph-file> [<regex> [<no>]]
+  (if-not (#{1 2 3} (count args))
+    (println "Usage: lein run <syntax-graph-file> [<regex> [<no>]]\n
   syntax-graph-file: Either a GraBaJa TGraph file or a JaMoPP model.
               regex: A regular expression for filtering the relevant classes.
                      Defaults to '.*', i.e., all classes.
                  no: The number of classes to display with the highest complexity.
-                     Defaults to 10."))
-  (let [[f rx n] args]
-    (if (re-matches #".*\.tg(\.gz)?" f)
-      (grabaja-do (tg/load-graph f)
-                  (if n (Integer/parseInt n) 10)
-                  (if rx (re-pattern rx) #".*"))
-      (do
-        (load-jamopp-mm)
-        (jamopp-do (emf/load-model f)
-                   (if n (Integer/parseInt n) 10)
-                   (if rx (re-pattern rx) #".*"))))))
+                     Defaults to 10.
+
+  An example call might look like this:
+
+    $ lein run my-project.xmi 'tld\\.domain\\.pkg\\..*' 50
+
+  That would load the JaMoPP model my-project.xmi, calculate all metrics for
+  every class in the tld.domain.pkg Java package, and display the results of
+  the 50 most complex classes.")
+    (let [[f rx n] args]
+      (if (re-matches #".*\.tg(\.gz)?" f)
+        (grabaja-do (tg/load-graph f)
+                    (if n (Integer/parseInt n) 10)
+                    (if rx (re-pattern rx) #".*"))
+        (do
+          (load-jamopp-mm)
+          (jamopp-do (emf/load-model f)
+                     (if n (Integer/parseInt n) 10)
+                     (if rx (re-pattern rx) #".*")))))))
