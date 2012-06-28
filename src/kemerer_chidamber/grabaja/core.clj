@@ -2,7 +2,8 @@
   (:require [funnyqt.utils :as u])
   (:use funnyqt.tg)
   (:use funnyqt.query)
-  (:use funnyqt.query.tg))
+  (:use funnyqt.query.tg)
+  (:import [java.util.concurrent ForkJoinPool RecursiveTask]))
 
 ;;* Convenience
 
@@ -90,9 +91,9 @@
 
 (u/compile-if (Class/forName "java.util.concurrent.ForkJoinTask")
               (do
-                (def fj-pool (java.util.concurrent.ForkJoinPool.))
-                (defn fj-do [vs metric]
-                  (proxy [java.util.concurrent.RecursiveTask] []
+                (def ^ForkJoinPool fj-pool (java.util.concurrent.ForkJoinPool.))
+                (defn fj-do ^RecursiveTask [vs metric]
+                  (proxy [RecursiveTask] []
                     (compute []
                       (doall
                        (if (< (count vs) 5)
@@ -101,10 +102,10 @@
                               vs)
                          (let [half (int (/ (count vs) 2))
                                vs1 (subvec vs 0 half)
-                               fj1 (.fork ^java.util.concurrent.RecursiveTask (fj-do vs1 metric))
+                               ^RecursiveTask fj1 (.fork (fj-do vs1 metric))
                                vs2 (subvec vs half)
-                               r2 (.compute ^java.util.concurrent.RecursiveTask (fj-do vs2 metric))
-                               r1 (.join ^java.util.concurrent.RecursiveTask fj1)]
+                               r2 (.compute (fj-do vs2 metric))
+                               r1 (.join fj1)]
                            (concat r1 r2))))))))
               nil)
 
@@ -116,7 +117,7 @@
                 (sort
                  (seq-compare (constantly 0) #(- %2 %1) compare)
                  (let [vs (vec (*get-classes-fn* g))]
-                   (.invoke fj-pool ^java.util.concurrent.RecursiveTask (fj-do vs metric))))
+                   (.invoke fj-pool (fj-do vs metric))))
                 (do (println "Sorry, ForkJoin application disabled.  Get a JDK7."
                              "Right now, we are simply falling back to sequential application.")
                     (apply-metric g metric))))

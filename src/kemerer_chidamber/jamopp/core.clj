@@ -2,7 +2,8 @@
   (:require [funnyqt.utils :as u])
   (:use funnyqt.emf)
   (:use funnyqt.query)
-  (:use funnyqt.query.emf))
+  (:use funnyqt.query.emf)
+  (:import [java.util.concurrent ForkJoinPool RecursiveTask]))
 
 ;;* Convenience
 
@@ -51,9 +52,9 @@
 
 (u/compile-if (Class/forName "java.util.concurrent.ForkJoinTask")
               (do
-                (def fj-pool (java.util.concurrent.ForkJoinPool.))
-                (defn fj-do [vs metric]
-                  (proxy [java.util.concurrent.RecursiveTask] []
+                (def ^ForkJoinPool fj-pool (ForkJoinPool.))
+                (defn fj-do ^RecursiveTask [vs metric]
+                  (proxy [RecursiveTask] []
                     (compute []
                       (doall
                        (if (< (count vs) 5)
@@ -62,10 +63,10 @@
                               vs)
                          (let [half (int (/ (count vs) 2))
                                vs1 (subvec vs 0 half)
-                               fj1 (.fork ^java.util.concurrent.RecursiveTask (fj-do vs1 metric))
+                               fj1 (.fork (fj-do vs1 metric))
                                vs2 (subvec vs half)
-                               r2 (.compute ^java.util.concurrent.RecursiveTask (fj-do vs2 metric))
-                               r1 (.join ^java.util.concurrent.RecursiveTask fj1)]
+                               r2 (.compute (fj-do vs2 metric))
+                               r1 (.join fj1)]
                            (concat r1 r2))))))))
               nil)
 
