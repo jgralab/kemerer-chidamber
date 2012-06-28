@@ -11,23 +11,51 @@ test automation.
 
 Getting started is really simple:
 
-- Install the `lein` shell (or bat) script as explained in the **Installation**
-section of the [Leiningen](https://github.com/technomancy/leiningen) page.
+1. Install the `lein` shell (or bat) script as explained at the
+   [Leiningen homepage](http://leiningen.org) page.
 
-- Fetch the project's dependencies:
+2. Fetch the project's dependencies:
 
 ```
 $ cd kemerer-chidamber
 $ lein deps
 ```
 
-- Run the tests/benchmarks with:
+3. Run the metrics suite on some GraBaJa or JaMoPP model.  For example, the
+   following command would load the `my-model.xmi` JaMoPP model, calculate the
+   metrics on every class in the `foo.bar` package (specified as a regex), and
+   display the metric values for the 20 most complex classes per metric.
 
 ```
-$ lein test                                     # All benchmarks: GraBaJa & JaMoPP
-$ lein test kemerer-chidamber.grabaja.test.core # Only GraBaJa
-$ lein test kemerer-chidamber.jamopp.test.core  # Only JaMoPP
+$ lein run my-model.xmi 'foo\.bar\..*' 20
 ```
+
+### Generating a JaMoPP model
+
+To generate a JaMoPP model of your own Java code so that you can calculate the
+metrics for your own classes, too, do the following.
+
+1. Checkout the JaMoPPC command line tool from the EMFText Subversion
+   repository.
+
+```
+$ svn co http://svn-st.inf.tu-dresden.de/svn/reuseware/trunk/EMFText%20Languages/org.emftext.language.java.jamoppc
+```
+
+2. That checkout contains a runnable `jamoppc.jar` which you can use to
+   generate a JaMoPP model from your Java source code.  The following command
+   parses the code in the `src/` folder, generates a JaMoPP model of the
+   complete project, and saves it as `my-project.xmi`.  The other arguments in
+   the call refer external JAR libraries used by your project which are needed
+   for resolution of classes, methods, and fields.
+
+```
+$ cd path/to/my-project
+$ java -Xmx2G -jar path/to/jamoppc.jar src/ my-project.xmi \
+    lib/foo.jar lib/bar.jar
+```
+
+3. Now you can calculate the metrics as shown above.
 
 ## License
 
