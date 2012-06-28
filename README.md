@@ -1,7 +1,8 @@
 # kemerer-chidamber
 
-This project implements the Kemerer & Chidamber OO-metrics for GraBaJa and
-JaMoPP syntax graphs.
+This project implements the Kemerer & Chidamber OO-metrics for
+[GraBaJa](http://www.emftext.org/index.php/EMFText) and
+[JaMoPP](http://www.jamopp.org) syntax graphs.
 
 ## Getting started
 
@@ -35,8 +36,8 @@ $ lein run my-model.xmi 'foo\.bar\..*' 20
 To generate a JaMoPP model of your own Java code so that you can calculate the
 metrics for your own classes, too, do the following.
 
-- Checkout the JaMoPPC command line tool from the EMFText Subversion
-  repository.
+- Checkout the JaMoPPC command line tool from the
+  [EMFText](http://www.emftext.org/index.php/EMFText) Subversion repository.
 
 ```
 $ svn co http://svn-st.inf.tu-dresden.de/svn/reuseware/trunk/EMFText%20Languages/org.emftext.language.java.jamoppc
