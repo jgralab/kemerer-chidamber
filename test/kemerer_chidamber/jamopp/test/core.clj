@@ -32,17 +32,17 @@
 
 (def jm (memoize load-jgralab-model))
 
-(deftest test-concrete-classifier-by-name
+(deftest test-classifier-by-name
   ;; Simple name
-  (is (concrete-classifier-by-name (jm) 'Vertex))
+  (is (classifier-by-name (jm) 'Vertex))
   ;; Qualified name
-  (is (concrete-classifier-by-name (jm) 'de.uni_koblenz.jgralab.Vertex))
+  (is (classifier-by-name (jm) 'de.uni_koblenz.jgralab.Vertex))
   (is (thrown-with-msg? Exception
         #".* is ambiguous\."
-        (concrete-classifier-by-name (jm) 'VertexImpl)))
+        (classifier-by-name (jm) 'VertexImpl)))
   (is (thrown-with-msg? Exception
         #"No such ConcreteClassifier .*"
-        (concrete-classifier-by-name (jm) 'de.uni_koblenz.foo.Bar))))
+        (classifier-by-name (jm) 'de.uni_koblenz.foo.Bar))))
 
 (deftest benchmark
   (println "Running with a JaMoPP Model")
@@ -72,7 +72,7 @@
                                    (filter
                                     (fn [c]
                                       (re-matches #"de\.uni_koblenz\.jgralab\..*"
-                                                  (class-qname c)))
+                                                  (classifier-qname c)))
                                     (eallcontents m 'Class)))]
         (dotimes [i iterations]
           (println)

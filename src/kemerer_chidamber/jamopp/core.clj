@@ -3,12 +3,13 @@
   (:use funnyqt.emf)
   (:use funnyqt.query)
   (:use funnyqt.query.emf)
+  (:use funnyqt.protocols)
   (:import [java.util.concurrent ForkJoinPool RecursiveTask]))
 
 ;;* Convenience
 
-(defn concrete-classifier-by-name
-  "Returns the Type with the given (fully qualified) name n."
+(defn classifier-by-name
+  "Returns the Classifier with the given (fully qualified) name n."
   [m n]
   (let [nm (name n)
         cun (str nm ".java")]
@@ -30,10 +31,13 @@
 ;;** Chidamber & Kemerer
 
 
-(defn class-qname
+(defn classifier-qname
   [c]
-  (clojure.string/replace (eget (econtainer c) :name)
-                          #"\.java$" ""))
+  (let [parent (econtainer c)]
+    (if (has-type? parent 'Classifier)
+      (str (classifier-qname parent) "$" (eget c :name))
+      (clojure.string/replace (eget parent :name)
+                              #"\.java$" ""))))
 
 (def ^{:dynamic true
        :doc "A function that should return all classes for which the metrics
@@ -48,7 +52,7 @@
   (sort
    (seq-compare (constantly 0) #(- %2 %1) compare)
    (for [c (*get-classes-fn* g)]
-     [c (metric c) (class-qname c)])))
+     [c (metric c) (classifier-qname c)])))
 
 (u/compile-if (Class/forName "java.util.concurrent.ForkJoinTask")
               (do
@@ -59,7 +63,7 @@
                       (doall
                        (if (< (count vs) 5)
                          (map (fn [c]
-                                [c (metric c) (class-qname c)])
+                                [c (metric c) (classifier-qname c)])
                               vs)
                          (let [half (int (/ (count vs) 2))
                                vs1 (subvec vs 0 half)

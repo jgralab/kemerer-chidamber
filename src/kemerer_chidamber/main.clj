@@ -45,7 +45,7 @@
                                       (filter
                                        (fn [c]
                                          (re-matches (re-pattern rx)
-                                                     (jamopp/class-qname c)))
+                                                     (jamopp/classifier-qname c)))
                                        (emf/eallcontents m 'Class)))]
     (println "Depth of Inheritance Tree:")
     (println "==========================")
