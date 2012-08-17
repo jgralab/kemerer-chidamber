@@ -37,10 +37,10 @@
   (is (concrete-classifier-by-name (jm) 'Vertex))
   ;; Qualified name
   (is (concrete-classifier-by-name (jm) 'de.uni_koblenz.jgralab.Vertex))
-  (is (thrown-with-msg? RuntimeException
+  (is (thrown-with-msg? Exception
         #".* is ambiguous\."
         (concrete-classifier-by-name (jm) 'VertexImpl)))
-  (is (thrown-with-msg? RuntimeException
+  (is (thrown-with-msg? Exception
         #"No such ConcreteClassifier .*"
         (concrete-classifier-by-name (jm) 'de.uni_koblenz.foo.Bar))))
 
