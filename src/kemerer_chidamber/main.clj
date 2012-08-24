@@ -76,7 +76,9 @@
     (println "============================")
     (pp/pprint (take n (jamopp/classes-by-lack-of-cohesion-in-methods-forkjoin model)))))
 
-(def load-jamopp-mm (memoize (fn [] (emf/load-metamodel "java.ecore"))))
+(def load-jamopp-mm (memoize (fn []
+                               (emf/load-metamodel "layout.ecore")
+                               (emf/load-metamodel "java.ecore"))))
 
 (defn -main [& args]
   (if-not (#{1 2 3} (count args))

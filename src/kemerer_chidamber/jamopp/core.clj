@@ -1,9 +1,11 @@
 (ns kemerer-chidamber.jamopp.core
-  (:require [funnyqt.utils :as u])
-  (:use funnyqt.emf)
-  (:use funnyqt.query)
-  (:use funnyqt.query.emf)
-  (:use funnyqt.protocols)
+  (:require [funnyqt.utils :as u]
+            clojure.set
+            clojure.string)
+  (:use funnyqt.emf
+        funnyqt.query
+        funnyqt.query.emf
+        funnyqt.protocols)
   (:import [java.util.concurrent ForkJoinPool RecursiveTask]))
 
 ;;* Convenience
@@ -30,14 +32,13 @@
 
 ;;** Chidamber & Kemerer
 
-
 (defn classifier-qname
   [c]
-  (let [parent (econtainer c)]
+  (if-let [parent (econtainer c)]
     (if (has-type? parent 'Classifier)
       (str (classifier-qname parent) "$" (eget c :name))
-      (clojure.string/replace (eget parent :name)
-                              #"\.java$" ""))))
+      (clojure.string/replace (eget parent :name) #"\.java$" ""))
+    (eget c :name)))
 
 (def ^{:dynamic true
        :doc "A function that should return all classes for which the metrics
@@ -47,7 +48,7 @@
     (eallobjects m 'Class)))
 
 (defn apply-metric
-  "Applies the given metric to all JGraLab classes."
+  "Applies the given metric delivered by *get-classes-fn* to all classes."
   [g metric]
   (sort
    (seq-compare (constantly 0) #(- %2 %1) compare)
@@ -75,8 +76,8 @@
               nil)
 
 (defn apply-metric-forkjoin
-  "Applies the given metric to all JGraLab classes in parallel using a
-  ForkJoinPool."
+  "Applies the given metric to all classes delivered by *get-classes-fn* in
+  parallel using a ForkJoinPool."
   [g metric]
   (u/compile-if (Class/forName "java.util.concurrent.ForkJoinTask")
                 (sort
@@ -97,10 +98,12 @@
   does not contain the information that java.lang.Integer extends
   java.lang.Number, so that its DIT is actually 2, not 1."
   [t]
-  (let [supers (reachables t [p-seq :extends :classifierReferences :target])]
+  (let [supers (reachables t [p-seq :extends :classifierReferences :target])
+        ;; Because Object extends itself...
+        supers (disj supers t)]
     (cond
      (seq supers) (inc (apply max (map depth-of-inheritance-tree supers)))
-     (let [cu (econtainer t)]
+     (when-let [cu (econtainer t)]
        (= (eget cu :name) "java.lang.Object.java")) 0
      :else 1)))
 
@@ -123,11 +126,11 @@
      ;; :statements for ClassMethods, :initialValue for Fields
      [p-alt :statements :initialValue]
      [p-* [<>--]]
-     [p-restr '[references.MethodCall references.IdentifierReference]]
+     [p-restr '[java.references.MethodCall java.references.IdentifierReference]]
      ;; Matches both the ClassMethod that is the target of a MethodCall as well
      ;; as the Field that is the target of a IdentifierReference
      :target
-     [p-restr '[members.ClassMethod members.Field]]
+     [p-restr '[java.members.ClassMethod java.members.Field]]
      --<>
      [p-restr 'Class #(not (= c %1))]]))
 
@@ -148,9 +151,9 @@
   (-> (reachables
        m [p-seq :statements
           [p-* <>--]
-          [p-restr '[statements.NormalSwitchCase statements.DefaultSwitchCase
-                     statements.Condition statements.ForLoop
-                     statements.DoWhileLoop statements.WhileLoop]]])
+          [p-restr '[java.statements.NormalSwitchCase java.statements.DefaultSwitchCase
+                     java.statements.Condition java.statements.ForLoop
+                     java.statements.DoWhileLoop java.statements.WhileLoop]]])
       count
       inc))
 
@@ -159,7 +162,7 @@
   [c]
   (reduce + (map cyclomatic-complexity
                  (reachables c [p-seq :members
-                                      [p-restr 'members.ClassMethod]]))))
+                                      [p-restr 'java.members.ClassMethod]]))))
 
 (defn classes-by-weighted-methods-per-class
   [g]
@@ -174,13 +177,14 @@
 
 (defn subtypes
   "Returns all direct subtypes of the given type t that are contained in
-  classifiers."
+  classes."
   [classes t]
   ;; Well, this is pretty slow, because all the needed references are
   ;; unidirectional.  You can get the superclass quickly, but getting
   ;; subclasses is hardly possible.
   (mapcat (fn [c]
-            (let [supers (reachables c [p-seq :extends
+            (let [supers (reachables c [p-seq
+                                        [p-alt :extends :implements]
                                         :classifierReferences
                                         :target])]
               (when (member? t supers)
@@ -189,28 +193,36 @@
 
 (defn classes-by-number-of-children
   [m]
-  (let [jg-classes (*get-classes-fn* m)]
-    (apply-metric m #(count (subtypes jg-classes %)))))
+  (let [all-classes (*get-classes-fn* m)]
+    (apply-metric m #(count (subtypes all-classes %)))))
 
 (defn classes-by-number-of-children-forkjoin
   [m]
-  (let [jg-classes (*get-classes-fn* m)]
-    (apply-metric-forkjoin m #(count (subtypes jg-classes %)))))
+  (let [all-classes (*get-classes-fn* m)]
+    (apply-metric-forkjoin m #(count (subtypes all-classes %)))))
 
 ;;*** Response for a Class
+
+(defn methods-of-class [c]
+  (reachables c [p-seq  :members
+                 [p-restr 'java.members.ClassMethod]]))
 
 (defn response-set
   "Returns the response set of the given type t."
   [t]
-  (let [own-methods (reachables t [p-seq  :members
-                                   [p-restr 'members.ClassMethod]])
-        called-methods (set (mapcat
-                             #(reachables % [p-seq :statements
-                                             [p-* <>--]
-                                             [p-restr 'references.MethodCall]
-                                             :target])
-                             own-methods))]
-    (into own-methods called-methods)))
+  (let [own-methods (methods-of-class t)
+        inherited-methods (mapcat methods-of-class
+                                  (reachables t [p-seq :extends
+                                                 [p-opt :classifierReferences]
+                                                 :target]))
+        all-methods (into own-methods inherited-methods)
+        called-methods (mapcat
+                        #(reachables % [p-seq :statements
+                                        [p-* <>--]
+                                        [p-restr 'java.references.MethodCall]
+                                        :target])
+                        all-methods)]
+    (into all-methods called-methods)))
 
 (defn classes-by-response-for-a-class
   [g]
@@ -221,28 +233,37 @@
   (apply-metric-forkjoin g #(count (response-set %))))
 
 
-;;*** Lack of Cohesion in Methods
+;;*** Lack of Cohesion in Object Methods
 
 (defn lack-of-cohesion
   "Returns the lack of cohesion metric value of t."
   [t]
   (let [fields (reachables t [p-seq :members
-                              [p-restr 'members.Field]])
+                              [p-restr 'java.members.Field]])
         methods (reachables t [p-seq :members
-                               [p-restr 'members.ClassMethod]])
+                               [p-restr 'java.members.ClassMethod]])
         accessed-fields (fn [m]
                           (reachables m [p-seq :statements
                                          [p-* <>--]
-                                         [p-restr 'references.IdentifierReference]
+                                         [p-restr 'java.references.IdentifierReference]
                                          :target
                                          [p-restr nil #(member? % fields)]]))
-        method-field-map (apply hash-map (mapcat (fn [m] [m (accessed-fields m)])
-                                                 methods))
-        combinations (loop [ms methods, pairs []]
+        method-field-map (apply hash-map (mapcat
+                                          (fn [m]
+                                            ;; Don't recognize methods
+                                            ;; that access no fields at
+                                            ;; all.
+                                            (let [af (accessed-fields m)]
+                                              (if (seq af)
+                                                [m af]
+                                                [])))
+                                          methods))
+        combinations (loop [ms (keys method-field-map), pairs []]
                        (if (next ms)
-                         (recur (rest ms) (concat pairs
-                                                  (map (fn [n] [(first ms) n])
-                                                       (rest ms))))
+                         (recur (rest ms)
+                                (concat pairs
+                                        (map (fn [n] [(first ms) n])
+                                             (rest ms))))
                          pairs))
         results (for [[m1 m2] combinations
                       :let [f1 (method-field-map m1)

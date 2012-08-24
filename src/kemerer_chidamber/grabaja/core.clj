@@ -1,8 +1,9 @@
 (ns kemerer-chidamber.grabaja.core
-  (:require [funnyqt.utils :as u])
-  (:use funnyqt.tg)
-  (:use funnyqt.query)
-  (:use funnyqt.query.tg)
+  (:require [funnyqt.utils :as u]
+            clojure.set)
+  (:use funnyqt.tg
+        funnyqt.query
+        funnyqt.query.tg)
   (:import [java.util.concurrent ForkJoinPool RecursiveTask]))
 
 ;;* Convenience
@@ -215,18 +216,26 @@
 
 ;;*** Response for a Class
 
+(defn methods-of-class
+  [t]
+  (reachables t [p-seq [<>-- 'IsClassBlockOf]
+                 [<>-- 'IsMemberOf]
+                 [p-restr 'MethodDeclaration]]))
+
 (defn response-set
   "Returns the response set of the given type t."
   [t]
-  (let [own-methods (reachables t [p-seq [<>-- 'IsClassBlockOf]
-                                         [<>-- 'IsMemberOf]
-                                         [p-restr 'MethodDeclaration]])
+  (let [own-methods (methods-of-class t)
+        inherited-methods (mapcat methods-of-class
+                                  (reachables t [p-seq [<-- 'IsSuperClassOf]
+                                                 [<-- 'IsTypeDefinitionOf]]))
+        all-methods (into own-methods inherited-methods)
         called-methods (set (mapcat
                              #(reachables % [p-seq [<>-- 'IsBodyOfMethod]
                                                    [<>-- 'IsStatementOf]
                                                    [<-- 'IsDeclarationOfInvokedMethod]])
-                             own-methods))]
-    (into own-methods called-methods)))
+                             all-methods))]
+    (into all-methods called-methods)))
 
 (defn classes-by-response-for-a-class
   [g]
@@ -254,9 +263,16 @@
                                          [<-- 'IsDeclarationOfAccessedField]
                                          [--> 'IsFieldCreationOf]
                                          [p-restr nil #(member? % fields)]]))
-        method-field-map (apply hash-map (mapcat (fn [m] [m (accessed-fields m)])
+        method-field-map (apply hash-map (mapcat (fn [m]
+                                                   ;; Don't recognize methods
+                                                   ;; that access no fields at
+                                                   ;; all.
+                                                   (let [af (accessed-fields m)]
+                                                     (if (seq af)
+                                                       [m af]
+                                                       [])))
                                                  methods))
-        combinations (loop [ms methods, pairs []]
+        combinations (loop [ms (keys method-field-map), pairs []]
                        (if (next ms)
                          (recur (rest ms) (concat pairs
                                                   (map (fn [n] [(first ms) n])
