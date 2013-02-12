@@ -8,5 +8,5 @@
   :url "https://github.com/jgralab/kemerer-chidamber"
   :warn-on-reflection true
   :jar-exclusions [#"(?:^|/).(svn|hg|git|tg|tg\.gz|xmi|xmi\.gz)/"]
-  :main kemerer-chidamber.main
+  :main ^:skip-aot kemerer-chidamber.main
   :jvm-opts ["-Xmx2G"])
