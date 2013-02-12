@@ -1,12 +1,12 @@
 (ns kemerer-chidamber.jamopp.core
-  (:require [funnyqt.utils :as u]
-            clojure.set
-            clojure.string)
-  (:use funnyqt.emf
-        funnyqt.query
-        funnyqt.query.emf
-        funnyqt.protocols)
-  (:import [java.util.concurrent ForkJoinPool RecursiveTask]))
+  (:require clojure.set)
+  (:require clojure.string)
+  (:use funnyqt.protocols)
+  (:use funnyqt.emf)
+  (:use funnyqt.query)
+  (:use funnyqt.query.emf)
+  (:require [funnyqt.utils :as u])
+  (:import (java.util.concurrent ForkJoinPool RecursiveTask)))
 
 ;;* Convenience
 

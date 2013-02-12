@@ -1,4 +1,5 @@
 (ns kemerer-chidamber.grabaja.test.core
+  (:require funnyqt.protocols)
   (:use kemerer-chidamber.grabaja.core)
   (:use kemerer-chidamber.test.generic)
   (:use funnyqt.tg)

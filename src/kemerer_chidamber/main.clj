@@ -1,5 +1,6 @@
 (ns kemerer-chidamber.main
   (:require [clojure.pprint :as pp])
+  (:require funnyqt.protocols)
   (:require [funnyqt.emf :as emf])
   (:require [funnyqt.tg :as tg])
   (:require [funnyqt.query.tg :as tgq])
@@ -10,7 +11,7 @@
   (binding [grabaja/*get-classes-fn* (fn [graph]
                                        (filter
                                         (fn [c] (re-matches rx (tg/value c :fullyQualifiedName)))
-                                        (tgq/vseq graph 'ClassDefinition)))]
+                                        (tg/vseq graph 'ClassDefinition)))]
     (println "Depth of Inheritance Tree:")
     (println "==========================")
     (pp/pprint (take n (grabaja/classes-by-depth-of-inheritance-tree-forkjoin graph)))
@@ -46,7 +47,7 @@
                                        (fn [c]
                                          (re-matches (re-pattern rx)
                                                      (jamopp/classifier-qname c)))
-                                       (emf/eallcontents m 'Class)))]
+                                       (emf/eallobjects m 'Class)))]
     (println "Depth of Inheritance Tree:")
     (println "==========================")
     (pp/pprint (take n (jamopp/classes-by-depth-of-inheritance-tree-forkjoin model)))

@@ -43,7 +43,7 @@
                                   (fn [c]
                                     (re-matches #"org\.pcollections\..*"
                                                 (classifier-qname c)))
-                                  (eallcontents m 'Class)))]
+                                  (eallobjects m 'Class)))]
       (dotimes [i iterations]
         (println)
         (println "Run" (inc i) "/" iterations)
